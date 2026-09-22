@@ -104,9 +104,23 @@ dotnet test Firmeza.sln
 docker compose up --build
 ```
 
-La aplicacion queda disponible en `http://localhost:8080` y PostgreSQL en el puerto local `5433`.
+## Ejecucion local
+
+```bash
+docker compose up -d db
+dotnet run --project Firmeza.Web --launch-profile http
+```
+
+La aplicacion queda disponible en `http://localhost:5161` y PostgreSQL en el puerto local `5433`.
+
+Para ejecutar aplicacion y base de datos dentro de Docker:
+
+```bash
+docker compose up --build
+```
+
+En ese caso, la aplicacion queda disponible en `http://localhost:8080`.
 
 ## Documentacion tecnica
 
 Los diagramas entidad-relacion y de clases estan en `docs/diagrams.md`.
-///cd
