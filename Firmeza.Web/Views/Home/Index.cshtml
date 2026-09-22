@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="grid min-h-[70vh] items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+    <section>
+        <p class="mb-5 text-sm font-black uppercase tracking-[0.25em] text-amber-600">Materiales que construyen futuro</p>
+        <h1 class="max-w-3xl text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">Todo tu negocio, <span class="text-amber-500">en firmeza.</span></h1>
+        <p class="mt-6 max-w-xl text-lg leading-8 text-slate-600">Administra el catálogo de materiales, tus clientes y el movimiento de ventas desde un panel claro y seguro.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+            <a asp-controller="Account" asp-action="Login" class="rounded-xl bg-slate-950 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-slate-300 transition hover:bg-amber-500 hover:text-slate-950">Entrar al panel</a>
+            <a asp-controller="Account" asp-action="Register" class="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-amber-400 hover:text-amber-600">Crear cuenta de cliente</a>
+        </div>
+    </section>
+    <section class="relative overflow-hidden rounded-[2rem] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-300 sm:p-12">
+        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-400/20 blur-2xl"></div>
+        <div class="relative">
+            <div class="mb-12 flex items-center justify-between"><span class="rounded-full bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-widest text-slate-950">Firmeza</span><span class="text-sm text-slate-400">2026</span></div>
+            <p class="text-3xl font-black leading-tight">Inventario ordenado.<br />Clientes atendidos.<br /><span class="text-amber-400">Decisiones rápidas.</span></p>
+            <div class="mt-12 grid grid-cols-3 gap-3 text-center"><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">01</p><p class="mt-1 text-xs text-slate-400">Productos</p></div><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">02</p><p class="mt-1 text-xs text-slate-400">Clientes</p></div><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">03</p><p class="mt-1 text-xs text-slate-400">Ventas</p></div></div>
+        </div>
+    </section>
+</div>

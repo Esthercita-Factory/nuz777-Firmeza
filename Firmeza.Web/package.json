@@ -1,0 +1,18 @@
+{
+  "name": "firmeza.web",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0"
+  }
+}

@@ -1,0 +1,74 @@
+@using Firmeza.Web.Data
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Firmeza</title>
+    <link rel="stylesheet" href="~/dist/main.css" />
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 antialiased">
+    @if (User.IsInRole(ApplicationRoles.Administrator))
+    {
+        <aside class="fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-slate-800 bg-slate-950 text-slate-300 lg:block">
+            <div class="flex h-full flex-col px-5 py-6">
+                <a asp-controller="Dashboard" asp-action="Index" class="mb-10 flex items-center gap-3 px-2 text-white">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-lg font-black text-slate-950">F</span>
+                    <span><span class="block text-lg font-black tracking-tight">Firmeza</span><span class="text-xs text-slate-500">Panel administrativo</span></span>
+                </a>
+                <nav class="space-y-1" aria-label="Navegación principal">
+                    <a asp-controller="Dashboard" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-slate-800 hover:text-white">Inicio</a>
+                    <a asp-controller="Products" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-slate-800 hover:text-white">Productos</a>
+                    <a asp-controller="Customers" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-slate-800 hover:text-white">Clientes</a>
+                    <a asp-controller="Sales" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-slate-800 hover:text-white">Ventas</a>
+                </nav>
+                <div class="mt-auto border-t border-slate-800 pt-5">
+                    <p class="truncate px-4 text-xs text-slate-500">@User.Identity?.Name</p>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="mt-2">
+                        <button type="submit" class="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white">Cerrar sesión</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    }
+
+    <div class="@(User.IsInRole(ApplicationRoles.Administrator) ? "lg:pl-72" : "")">
+        <header class="border-b border-slate-200 bg-white">
+            <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+                <a asp-controller="Home" asp-action="Index" class="text-xl font-black tracking-tight text-slate-950 lg:hidden">Firmeza<span class="text-amber-500">.</span></a>
+                <div class="ml-auto flex items-center gap-3">
+                    @if (User.Identity?.IsAuthenticated == true && !User.IsInRole(ApplicationRoles.Administrator))
+                    {
+                        <span class="text-sm text-slate-500">Cuenta de cliente</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post"><button class="text-sm font-bold text-slate-700 hover:text-amber-600">Salir</button></form>
+                    }
+                    else if (User.Identity?.IsAuthenticated != true)
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="text-sm font-bold text-slate-700 hover:text-amber-600">Ingresar</a>
+                    }
+                </div>
+            </div>
+        </header>
+
+        <main class="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+            @if (TempData["Message"] is string message)
+            {
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">@message</div>
+            }
+            @if (TempData["Error"] is string error)
+            {
+                <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">@error</div>
+            }
+            @RenderBody()
+        </main>
+
+        <footer class="border-t border-slate-200 bg-white px-5 py-6 text-center text-xs text-slate-500 lg:px-8">
+            Firmeza · Gestión de productos y clientes
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script type="module" src="~/dist/main.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
