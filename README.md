@@ -109,3 +109,4 @@ La aplicacion queda disponible en `http://localhost:8080` y PostgreSQL en el pue
 ## Documentacion tecnica
 
 Los diagramas entidad-relacion y de clases estan en `docs/diagrams.md`.
+///
