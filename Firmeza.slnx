@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Firmeza.Web\Firmeza.Web.csproj" />
+  <Project Path="Firmeza.Web.Tests\Firmeza.Web.Tests.csproj" />
+</Solution>
