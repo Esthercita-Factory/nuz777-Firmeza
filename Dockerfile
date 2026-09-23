@@ -2,6 +2,7 @@ FROM node:22-alpine AS frontend
 WORKDIR /src/Firmeza.Web
 COPY Firmeza.Web/package*.json ./
 RUN npm ci
+COPY Firmeza.Web/vite.config.js ./
 COPY Firmeza.Web/Assets ./Assets
 COPY Firmeza.Web/Views ./Views
 RUN npm run build
