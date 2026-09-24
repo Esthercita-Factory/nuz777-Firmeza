@@ -3,15 +3,15 @@
     ViewData["Title"] = "Ingresar";
 }
 <div class="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200 lg:grid-cols-2">
-    <div class="bg-slate-950 p-8 text-white sm:p-12"><span class="text-sm font-black uppercase tracking-[0.25em] text-amber-400">Firmeza</span><h1 class="mt-16 text-4xl font-black tracking-tight">Tu operación,<br /><span class="text-amber-400">bajo control.</span></h1><p class="mt-5 leading-7 text-slate-400">Ingresa al panel administrativo para gestionar el negocio.</p></div>
+    <div class="bg-slate-950 p-8 text-white sm:p-12"><a asp-controller="Home" asp-action="Index" class="flex items-center gap-3"><partial name="_Logo" model="@("h-10 w-10")" /><span class="text-sm font-black uppercase tracking-[0.25em] text-amber-400">Firmeza</span></a><h1 class="mt-16 text-4xl font-black tracking-tight">Tu operación,<br /><span class="text-amber-400">bajo control.</span></h1><p class="mt-5 leading-7 text-slate-400">Ingresa al panel administrativo para gestionar el negocio.</p></div>
     <div class="p-8 sm:p-12"><h2 class="text-2xl font-black text-slate-950">Iniciar sesión</h2><p class="mt-2 text-sm text-slate-500">Solo los administradores pueden entrar a este panel.</p>
         @if (TempData["Message"] is string message) { <div class="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">@message</div> }
         <form asp-action="Login" method="post" class="mt-8 space-y-5"><div asp-validation-summary="ModelOnly" class="text-sm text-rose-600"></div><input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
-            <div><label asp-for="Email" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Email" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100" autocomplete="email" /><span asp-validation-for="Email" class="text-xs text-rose-600"></span></div>
-            <div><label asp-for="Password" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Password" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100" autocomplete="current-password" /><span asp-validation-for="Password" class="text-xs text-rose-600"></span></div>
+            <div><label asp-for="Email" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Email" placeholder="tu@correo.com" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 outline-none transition placeholder-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" autocomplete="email" /><span asp-validation-for="Email" class="text-xs text-rose-600"></span></div>
+            <div><label asp-for="Password" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Password" placeholder="Ingresa tu contraseña" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 outline-none transition placeholder-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" autocomplete="current-password" /><span asp-validation-for="Password" class="text-xs text-rose-600"></span></div>
             <label class="flex items-center gap-2 text-sm text-slate-500"><input asp-for="RememberMe" class="h-4 w-4 rounded border-slate-300 text-amber-500" /> Recordarme</label>
             <button class="w-full rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 transition hover:bg-amber-300" type="submit">Ingresar</button>
         </form><p class="mt-6 text-center text-sm text-slate-500">¿Eres cliente? <a asp-action="Register" class="font-bold text-amber-600 hover:text-amber-500">Crea tu cuenta</a></p>
     </div>
 </div>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+

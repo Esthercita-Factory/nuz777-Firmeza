@@ -2,22 +2,134 @@
     ViewData["Title"] = "Inicio";
 }
 
-<div class="grid min-h-[70vh] items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-    <section>
-        <p class="mb-5 text-sm font-black uppercase tracking-[0.25em] text-amber-600">Materiales que construyen futuro</p>
-        <h1 class="max-w-3xl text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">Todo tu negocio, <span class="text-amber-500">en firmeza.</span></h1>
-        <p class="mt-6 max-w-xl text-lg leading-8 text-slate-600">Administra el catálogo de materiales, tus clientes y el movimiento de ventas desde un panel claro y seguro.</p>
-        <div class="mt-8 flex flex-wrap gap-3">
-            <a asp-controller="Account" asp-action="Login" class="rounded-xl bg-slate-950 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-slate-300 transition hover:bg-amber-500 hover:text-slate-950">Entrar al panel</a>
-            <a asp-controller="Account" asp-action="Register" class="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-amber-400 hover:text-amber-600">Crear cuenta de cliente</a>
-        </div>
-    </section>
-    <section class="relative overflow-hidden rounded-[2rem] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-300 sm:p-12">
-        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-400/20 blur-2xl"></div>
-        <div class="relative">
-            <div class="mb-12 flex items-center justify-between"><span class="rounded-full bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-widest text-slate-950">Firmeza</span><span class="text-sm text-slate-400">2026</span></div>
-            <p class="text-3xl font-black leading-tight">Inventario ordenado.<br />Clientes atendidos.<br /><span class="text-amber-400">Decisiones rápidas.</span></p>
-            <div class="mt-12 grid grid-cols-3 gap-3 text-center"><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">01</p><p class="mt-1 text-xs text-slate-400">Productos</p></div><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">02</p><p class="mt-1 text-xs text-slate-400">Clientes</p></div><div class="rounded-2xl bg-white/10 p-4"><p class="text-2xl font-black">03</p><p class="mt-1 text-xs text-slate-400">Ventas</p></div></div>
-        </div>
-    </section>
-</div>
+<section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-amber-300/30 blur-3xl" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -left-24 top-40 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl" aria-hidden="true"></div>
+
+    <div class="grid min-h-[75vh] items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+        <section class="relative">
+            <p class="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-black uppercase tracking-[0.25em] text-amber-700">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M9.57 3.03a2 2 0 0 1 2.86 0l7.55 7.47c.62.62.86 1.53.6 2.37a2.25 2.25 0 0 1-2.13 1.63h-1V18a2.25 2.25 0 0 1-2.25 2.25h-.75V16.5a.75.75 0 0 0-1.5 0v3.75h-3.3a1.5 1.5 0 0 1-1.2-.6l-3.5-4.75H6.5A2.25 2.25 0 0 1 4.25 12.5V10.5c0-.97.78-1.75 1.75-1.75H7.5l2.07-5.72Z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M15.3 2.95a.75.75 0 0 1 .5.94l-.64 2.12h.79a.75.75 0 0 1 .7 1l.2.5h-1.33l-.35 1.18a.75.75 0 0 1-1.43-.43l.46-1.53.05-.17H13.2l-.51 1.72a.75.75 0 0 1-1.43-.43l.36-1.2v-.01a3.98 3.98 0 0 1 2.5-1.5h.13l.11-.37.53-1.8a.75.75 0 0 1 .97-.5Z" clip-rule="evenodd" /></svg>
+                Materiales que construyen futuro
+            </p>
+            <h1 class="max-w-3xl text-5xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+                Todo tu negocio,<br /><span class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 bg-clip-text text-transparent">en firmeza.</span>
+            </h1>
+            <p class="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+                Administra el catálogo de materiales, tus clientes y el movimiento de ventas desde un panel claro, seguro y siempre disponible.
+            </p>
+            <div class="mt-9 flex flex-wrap items-center gap-3">
+                <a asp-controller="Account" asp-action="Login" class="group inline-flex items-center gap-2 rounded-xl bg-slate-950 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-300 transition hover:bg-amber-500 hover:text-slate-950">
+                    Entrar al panel
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 transition-transform group-hover:translate-x-1"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+                </a>
+                <a asp-controller="Account" asp-action="Register" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:border-amber-400 hover:text-amber-600">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6m3-3h-6" /></svg>
+                    Crear cuenta de cliente
+                </a>
+            </div>
+
+            <dl class="mt-12 flex max-w-md items-center justify-between gap-6 border-t border-slate-200 pt-6">
+                <div>
+                    <dt class="text-xs font-bold uppercase tracking-widest text-slate-400">Disponible</dt>
+                    <dd class="mt-1 flex items-center gap-2 text-sm font-black text-slate-900">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-emerald-500"><polyline points="20 6 9 17 4 12" /></svg>
+                        24 / 7
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-bold uppercase tracking-widest text-slate-400">Soporte</dt>
+                    <dd class="mt-1 flex items-center gap-2 text-sm font-black text-slate-900">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-amber-500"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z" /><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" /></svg>
+                        Directo
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-bold uppercase tracking-widest text-slate-400">Seguridad</dt>
+                    <dd class="mt-1 flex items-center gap-2 text-sm font-black text-slate-900">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-sky-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg>
+                        Certificado
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="relative overflow-hidden rounded-[2rem] bg-slate-950 p-8 text-white shadow-2xl shadow-slate-300 sm:p-10">
+            <div class="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-amber-400/20 blur-2xl" aria-hidden="true"></div>
+            <div class="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-sky-400/10 blur-2xl" aria-hidden="true"></div>
+
+            <div class="relative">
+                <div class="mb-10 flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-widest text-slate-950">
+                        <svg viewBox="0 0 24 24" fill="currentColor" class="h-3 w-3"><path d="M13.35 1.5h-.92L4.35 14h4.46l-4 8.5h.85L14.69 16H8.9l5.6-14.5Z" /></svg>
+                        Firmeza
+                    </span>
+                    <span class="text-xs font-semibold text-slate-400">2026</span>
+                </div>
+
+                <p class="text-3xl font-black leading-tight sm:text-4xl">
+                    Inventario ordenado.<br />Clientes atendidos.<br /><span class="text-amber-400">Decisiones rápidas.</span>
+                </p>
+
+                <div class="mt-12 grid grid-cols-3 gap-3">
+                    <div class="rounded-2xl bg-white/[0.07] p-4 text-center backdrop-blur-sm">
+                        <p class="text-2xl font-black text-amber-400">01</p>
+                        <p class="mt-1 text-xs text-slate-400">Productos</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/[0.07] p-4 text-center backdrop-blur-sm">
+                        <p class="text-2xl font-black text-amber-400">02</p>
+                        <p class="mt-1 text-xs text-slate-400">Clientes</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/[0.07] p-4 text-center backdrop-blur-sm">
+                        <p class="text-2xl font-black text-amber-400">03</p>
+                        <p class="mt-1 text-xs text-slate-400">Ventas</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    <span class="flex items-center gap-2 text-xs font-bold text-slate-300">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-emerald-400"><polyline points="20 6 9 17 4 12" /></svg>
+                        Panel operativo activo
+                    </span>
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                    </span>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+
+<section class="mt-20">
+    <div class="mb-10 text-center">
+        <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-600">Lo que vas a encontrar</p>
+        <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Un panel para gobernarlo todo</h2>
+    </div>
+
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <article class="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-100">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 transition group-hover:bg-amber-500 group-hover:text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="m7 8-4 16h18L17 8" /><circle cx="12" cy="8" r="4" /><path d="M7 8h10" /><path d="m12 27 4 3v-3" /></svg>
+            </div>
+            <h3 class="mt-5 text-lg font-black text-slate-950">Catálogo de materiales</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Registra tus productos con código, descripción, precio y stock, y mantenlos siempre al día.</p>
+        </article>
+
+        <article class="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-sky-300 hover:shadow-lg hover:shadow-sky-100">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 transition group-hover:bg-sky-500 group-hover:text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+            </div>
+            <h3 class="mt-5 text-lg font-black text-slate-950">Tus clientes</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Centraliza la información de cada cliente y accede a ella cuando la necesites.</p>
+        </article>
+
+        <article class="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-100">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition group-hover:bg-emerald-500 group-hover:text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
+            </div>
+            <h3 class="mt-5 text-lg font-black text-slate-950">Control de ventas</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Lleva el registro de cada operación, con estados y totales claros al instante.</p>
+        </article>
+    </div>
+</section>

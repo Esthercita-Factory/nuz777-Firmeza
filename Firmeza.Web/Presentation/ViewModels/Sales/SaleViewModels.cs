@@ -1,4 +1,4 @@
-namespace Firmeza.Web.ViewModels.Sales;
+namespace Firmeza.Web.Presentation.ViewModels.Sales;
 
 public class SaleListItemViewModel
 {

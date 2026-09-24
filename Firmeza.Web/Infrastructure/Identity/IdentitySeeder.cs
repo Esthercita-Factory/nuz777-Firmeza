@@ -1,7 +1,6 @@
-using Firmeza.Web.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Firmeza.Web.Data;
+namespace Firmeza.Web.Infrastructure.Identity;
 
 public static class IdentitySeeder
 {

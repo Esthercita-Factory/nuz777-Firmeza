@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace Firmeza.Web.Models;
+namespace Firmeza.Web.Infrastructure.Identity;
 
 public class ApplicationUser : IdentityUser
 {

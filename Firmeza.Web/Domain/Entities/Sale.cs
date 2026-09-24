@@ -1,12 +1,7 @@
-namespace Firmeza.Web.Models;
+using Firmeza.Web.Domain.Enums;
+using Firmeza.Web.Infrastructure.Identity;
 
-public enum SaleStatus
-{
-    Pending,
-    Confirmed,
-    Delivered,
-    Cancelled
-}
+namespace Firmeza.Web.Domain.Entities;
 
 public class Sale
 {

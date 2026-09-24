@@ -1,2 +1,43 @@
 @model CustomerFormViewModel
-<div class="grid gap-5 sm:grid-cols-2"><div><label asp-for="FullName" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="FullName" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="FullName" class="text-xs text-rose-600"></span></div><div><label asp-for="Document" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Document" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="Document" class="text-xs text-rose-600"></span></div><div><label asp-for="Age" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Age" type="number" min="18" max="120" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="Age" class="text-xs text-rose-600"></span></div><div><label asp-for="Phone" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Phone" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="Phone" class="text-xs text-rose-600"></span></div><div class="sm:col-span-2"><label asp-for="Email" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Email" type="email" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="Email" class="text-xs text-rose-600"></span></div><div class="sm:col-span-2"><label asp-for="Address" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Address" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><span asp-validation-for="Address" class="text-xs text-rose-600"></span></div><label class="flex items-center gap-3 text-sm font-bold text-slate-700 sm:col-span-2"><input asp-for="IsActive" class="h-5 w-5 rounded border-slate-300 text-amber-500" /> Cliente activo</label></div>
+<div class="grid gap-6 sm:grid-cols-2">
+    <div class="space-y-1.5">
+        <label asp-for="FullName" class="block text-sm font-bold text-slate-700"></label>
+        <input asp-for="FullName" placeholder="Ej.: Ana Martínez López" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+        <span asp-validation-for="FullName" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="space-y-1.5">
+        <label asp-for="Document" class="block text-sm font-bold text-slate-700"></label>
+        <input asp-for="Document" placeholder="Ej.: 1.234.567.890" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+        <span asp-validation-for="Document" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="space-y-1.5">
+        <label asp-for="Age" class="block text-sm font-bold text-slate-700"></label>
+        <div class="relative">
+            <input asp-for="Age" type="number" min="18" max="120" placeholder="Ej.: 30" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs font-bold text-slate-400">años</span>
+        </div>
+        <span asp-validation-for="Age" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="space-y-1.5">
+        <label asp-for="Phone" class="block text-sm font-bold text-slate-700"></label>
+        <input asp-for="Phone" placeholder="Ej.: 300 123 4567" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+        <span asp-validation-for="Phone" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="space-y-1.5 sm:col-span-2">
+        <label asp-for="Email" class="block text-sm font-bold text-slate-700"></label>
+        <input asp-for="Email" type="email" autocomplete="email" placeholder="ejemplo@correo.com" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+        <span asp-validation-for="Email" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="space-y-1.5 sm:col-span-2">
+        <label asp-for="Address" class="block text-sm font-bold text-slate-700"></label>
+        <input asp-for="Address" placeholder="Ej.: Cra. 10 # 20-30, Bogotá" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+        <span asp-validation-for="Address" class="block text-xs text-rose-600"></span>
+    </div>
+    <div class="flex items-center justify-between gap-5 rounded-xl bg-slate-50 p-4 sm:col-span-2">
+        <div>
+            <label asp-for="IsActive" class="block text-sm font-bold text-slate-700"></label>
+            <p class="text-xs text-slate-400">Los clientes inactivos no aparecen al registrar ventas.</p>
+        </div>
+        <input asp-for="IsActive" class="h-5 w-5 rounded border-slate-300 text-amber-500 transition focus:ring-2 focus:ring-amber-400" />
+    </div>
+</div>

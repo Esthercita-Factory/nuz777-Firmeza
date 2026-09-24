@@ -1,18 +1,19 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Firmeza.Web.ViewModels.Products;
+namespace Firmeza.Web.Presentation.ViewModels.Products;
 
 public class ProductFormViewModel
 {
     public Guid Id { get; set; }
 
-    [Display(Name = "SKU")]
-    [Required(ErrorMessage = "El SKU es obligatorio.")]
+    [Display(Name = "Código de producto")]
+    [Required(ErrorMessage = "El código es obligatorio.")]
     [StringLength(30)]
     public string Sku { get; set; } = string.Empty;
 
     [Display(Name = "Nombre")]
     [Required(ErrorMessage = "El nombre es obligatorio.")]
+    [RegularExpression(@"^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ' -]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
     [StringLength(120)]
     public string Name { get; set; } = string.Empty;
 

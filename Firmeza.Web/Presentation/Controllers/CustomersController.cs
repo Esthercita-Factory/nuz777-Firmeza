@@ -1,12 +1,13 @@
 using System.Globalization;
-using Firmeza.Web.Data;
-using Firmeza.Web.Models;
-using Firmeza.Web.ViewModels.Customers;
+using Firmeza.Web.Infrastructure.Identity;
+using Firmeza.Web.Infrastructure.Persistence;
+using Firmeza.Web.Domain.Entities;
+using Firmeza.Web.Presentation.ViewModels.Customers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Firmeza.Web.Controllers;
+namespace Firmeza.Web.Presentation.Controllers;
 
 [Authorize(Roles = ApplicationRoles.Administrator)]
 public class CustomersController : Controller

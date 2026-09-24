@@ -1,4 +1,4 @@
-namespace Firmeza.Web.Services;
+namespace Firmeza.Web.Domain.Services;
 
 public static class InventoryCalculator
 {

@@ -67,7 +67,7 @@ La aplicacion aplica las migraciones pendientes y crea los roles y el administra
 
 ## Migraciones EF Core
 
-Toda la estructura de la base de datos, incluidas las tablas de Identity, se encuentra en `Firmeza.Web/Data/Migrations`. No se usa un script SQL manual.
+Toda la estructura de la base de datos, incluidas las tablas de Identity, se encuentra en `Firmeza.Web/Infrastructure/Persistence/Migrations`. No se usa un script SQL manual.
 
 ```bash
 dotnet ef migrations add NombreDeLaMigracion --project Firmeza.Web

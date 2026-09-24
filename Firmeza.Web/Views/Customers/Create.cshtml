@@ -1,4 +1,4 @@
 @model CustomerFormViewModel
 @{ ViewData["Title"] = "Nuevo cliente"; }
 <div class="mx-auto max-w-3xl"><a asp-action="Index" class="text-sm font-bold text-amber-600">← Volver a clientes</a><div class="mt-5 rounded-3xl bg-white p-8 shadow-sm sm:p-10"><p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Relaciones</p><h1 class="mt-2 text-3xl font-black">Nuevo cliente</h1><p class="mt-2 text-slate-500">Registra la información de contacto y facturación.</p><form asp-action="Create" method="post" class="mt-8"><div asp-validation-summary="ModelOnly" class="mb-5 text-sm text-rose-600"></div><partial name="_Form" model="Model" /><div class="mt-8 flex justify-end gap-3"><a asp-action="Index" class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700">Cancelar</a><button type="submit" class="rounded-xl bg-amber-400 px-6 py-3 text-sm font-black text-slate-950">Guardar cliente</button></div></form></div></div>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+

@@ -1,3 +1,24 @@
 @import "tailwindcss" source(none);
 
 @source "../../Views";
+@source "../../Assets";
+
+html,
+body {
+    overflow-x: hidden;
+}
+
+@keyframes firmeza-page-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#main-content > main {
+    animation: firmeza-page-in 350ms ease-out both;
+}

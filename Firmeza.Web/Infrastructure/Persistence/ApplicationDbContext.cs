@@ -1,8 +1,9 @@
-using Firmeza.Web.Models;
+using Firmeza.Web.Domain.Entities;
+using Firmeza.Web.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Firmeza.Web.Data;
+namespace Firmeza.Web.Infrastructure.Persistence;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {

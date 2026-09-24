@@ -1,8 +1,8 @@
-using Firmeza.Web.Models;
+using Firmeza.Web.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Firmeza.Web.Data.Configurations;
+namespace Firmeza.Web.Infrastructure.Persistence.Configurations;
 
 public class SaleDetailConfiguration : IEntityTypeConfiguration<SaleDetail>
 {

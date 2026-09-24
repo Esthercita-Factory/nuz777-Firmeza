@@ -1,4 +1,4 @@
-namespace Firmeza.Web.Data;
+namespace Firmeza.Web.Infrastructure.Identity;
 
 public static class ApplicationRoles
 {

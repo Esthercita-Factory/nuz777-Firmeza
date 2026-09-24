@@ -1,14 +1,15 @@
 using System.Diagnostics;
-using Firmeza.Web.Models;
+using Firmeza.Web.Presentation.ViewModels;
+using Firmeza.Web.Infrastructure.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Firmeza.Web.Controllers;
+namespace Firmeza.Web.Presentation.Controllers;
 
 public class HomeController : Controller
 {
     public IActionResult Index()
     {
-        if (User.IsInRole(Data.ApplicationRoles.Administrator))
+        if (User.IsInRole(ApplicationRoles.Administrator))
         {
             return RedirectToAction("Index", "Dashboard");
         }

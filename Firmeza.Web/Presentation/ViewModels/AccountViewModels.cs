@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Firmeza.Web.ViewModels;
+namespace Firmeza.Web.Presentation.ViewModels;
 
 public class LoginViewModel
 {
@@ -20,6 +20,7 @@ public class RegisterViewModel
 {
     [Display(Name = "Nombre completo")]
     [Required(ErrorMessage = "El nombre es obligatorio.")]
+    [RegularExpression(@"^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ' -]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
     [StringLength(120)]
     public string FullName { get; set; } = string.Empty;
 

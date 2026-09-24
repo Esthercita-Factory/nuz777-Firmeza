@@ -1,10 +1,11 @@
-using Firmeza.Web.Data;
-using Firmeza.Web.ViewModels.Sales;
+using Firmeza.Web.Infrastructure.Identity;
+using Firmeza.Web.Infrastructure.Persistence;
+using Firmeza.Web.Presentation.ViewModels.Sales;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Firmeza.Web.Controllers;
+namespace Firmeza.Web.Presentation.Controllers;
 
 [Authorize(Roles = ApplicationRoles.Administrator)]
 public class SalesController : Controller

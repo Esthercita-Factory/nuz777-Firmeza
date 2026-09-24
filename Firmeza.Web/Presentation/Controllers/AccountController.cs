@@ -1,10 +1,9 @@
-using Firmeza.Web.Data;
-using Firmeza.Web.Models;
-using Firmeza.Web.ViewModels;
+using Firmeza.Web.Infrastructure.Identity;
+using Firmeza.Web.Presentation.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Firmeza.Web.Controllers;
+namespace Firmeza.Web.Presentation.Controllers;
 
 public class AccountController : Controller
 {

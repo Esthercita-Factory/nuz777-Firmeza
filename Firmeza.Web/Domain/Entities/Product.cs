@@ -1,4 +1,4 @@
-namespace Firmeza.Web.Models;
+namespace Firmeza.Web.Domain.Entities;
 
 public class Product
 {

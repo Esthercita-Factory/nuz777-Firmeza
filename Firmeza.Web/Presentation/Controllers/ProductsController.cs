@@ -1,11 +1,12 @@
-using Firmeza.Web.Data;
-using Firmeza.Web.Models;
-using Firmeza.Web.ViewModels.Products;
+using Firmeza.Web.Infrastructure.Identity;
+using Firmeza.Web.Infrastructure.Persistence;
+using Firmeza.Web.Domain.Entities;
+using Firmeza.Web.Presentation.ViewModels.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Firmeza.Web.Controllers;
+namespace Firmeza.Web.Presentation.Controllers;
 
 [Authorize(Roles = ApplicationRoles.Administrator)]
 public class ProductsController : Controller
@@ -133,7 +134,7 @@ public class ProductsController : Controller
         var normalized = sku.Trim().ToUpperInvariant();
         if (await _db.Products.AnyAsync(product => product.Sku == normalized && (excludedId == null || product.Id != excludedId)))
         {
-            ModelState.AddModelError(nameof(ProductFormViewModel.Sku), "Ya existe un producto con ese SKU.");
+            ModelState.AddModelError(nameof(ProductFormViewModel.Sku), "Ya existe un producto con ese código.");
         }
     }
 

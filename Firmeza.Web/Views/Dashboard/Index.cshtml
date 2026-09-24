@@ -1,7 +1,128 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
+
+    string StatusBadge(string status) => status switch
+    {
+        "Pending" => "bg-amber-50 text-amber-700 ring-amber-200",
+        "Confirmed" => "bg-sky-50 text-sky-700 ring-sky-200",
+        "Delivered" => "bg-emerald-50 text-emerald-700 ring-emerald-200",
+        "Cancelled" => "bg-rose-50 text-rose-700 ring-rose-200",
+        _ => "bg-slate-100 text-slate-600 ring-slate-200"
+    };
+
+    string StatusLabel(string status) => status switch
+    {
+        "Pending" => "Pendiente",
+        "Confirmed" => "Confirmada",
+        "Delivered" => "Entregada",
+        "Cancelled" => "Cancelada",
+        _ => status
+    };
 }
-<div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Resumen operativo</p><h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Buenos días, @User.Identity?.Name?.Split('@')[0]</h1><p class="mt-2 text-slate-500">Esto es lo que está pasando en tu negocio.</p></div><span class="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm">Panel administrativo</span></div>
-<div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div class="rounded-2xl bg-slate-950 p-6 text-white shadow-lg shadow-slate-200"><p class="text-sm text-slate-400">Productos activos</p><p class="mt-3 text-4xl font-black">@Model.ProductCount</p><a asp-controller="Products" asp-action="Index" class="mt-5 inline-block text-xs font-bold text-amber-400">Ver catálogo →</a></div><div class="rounded-2xl bg-white p-6 shadow-sm"><p class="text-sm text-slate-500">Clientes activos</p><p class="mt-3 text-4xl font-black text-slate-950">@Model.CustomerCount</p><a asp-controller="Customers" asp-action="Index" class="mt-5 inline-block text-xs font-bold text-amber-600">Ver clientes →</a></div><div class="rounded-2xl bg-white p-6 shadow-sm"><p class="text-sm text-slate-500">Ventas registradas</p><p class="mt-3 text-4xl font-black text-slate-950">@Model.SaleCount</p><a asp-controller="Sales" asp-action="Index" class="mt-5 inline-block text-xs font-bold text-amber-600">Ver ventas →</a></div><div class="rounded-2xl border border-amber-200 bg-amber-50 p-6"><p class="text-sm text-amber-800">Ventas acumuladas</p><p class="mt-3 text-3xl font-black text-slate-950">@Model.SalesTotal.ToString("C2")</p><p class="mt-5 text-xs font-semibold text-amber-700">Sin ventas canceladas</p></div></div>
-<div class="mt-8 rounded-2xl bg-white shadow-sm"><div class="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><h2 class="font-black text-slate-950">Ventas recientes</h2><p class="mt-1 text-sm text-slate-500">Últimos movimientos registrados.</p></div><a asp-controller="Sales" asp-action="Index" class="text-sm font-bold text-amber-600">Ver todas</a></div><div class="overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Venta</th><th class="px-6 py-4">Cliente</th><th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Estado</th><th class="px-6 py-4 text-right">Total</th></tr></thead><tbody class="divide-y divide-slate-100">@foreach (var sale in Model.RecentSales) {<tr class="hover:bg-slate-50"><td class="px-6 py-4 font-bold text-slate-900">@sale.SaleNumber</td><td class="px-6 py-4 text-slate-600">@sale.CustomerName</td><td class="px-6 py-4 text-slate-500">@sale.SaleDate.ToLocalTime().ToString("dd/MM/yyyy")</td><td class="px-6 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">@sale.Status</span></td><td class="px-6 py-4 text-right font-bold">@sale.Total.ToString("C2")</td></tr>}@if (!Model.RecentSales.Any()) {<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Todavía no hay ventas registradas.</td></tr>}</tbody></table></div></div>
+
+<div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-600">Resumen operativo</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Buenos días, @User.Identity?.Name?.Split('@')[0]</h1>
+        <p class="mt-2 text-slate-500">Esto es lo que está pasando en tu negocio.</p>
+    </div>
+    <span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-amber-500"><rect x="2" y="4" width="20" height="14" rx="2" /><path d="M8 21h8m-4-4v3" /><path d="M12 11v2m0-6v0" /></svg>
+        Panel administrativo
+    </span>
+</div>
+
+<div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="group relative overflow-hidden rounded-2xl bg-slate-950 p-6 text-white shadow-lg shadow-slate-200">
+        <div class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-amber-400/20 blur-2xl transition group-hover:bg-amber-400/30" aria-hidden="true"></div>
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5M12 22V12" /></svg>
+        </div>
+        <p class="mt-5 text-sm text-slate-400">Productos activos</p>
+        <p class="mt-1 text-4xl font-black">@Model.ProductCount</p>
+        <a asp-controller="Products" asp-action="Index" class="mt-5 inline-flex items-center gap-1 text-xs font-bold text-amber-400 transition group-hover:gap-2">Ver catálogo <span aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        </div>
+        <p class="mt-5 text-sm text-slate-500">Clientes activos</p>
+        <p class="mt-1 text-4xl font-black text-slate-950">@Model.CustomerCount</p>
+        <a asp-controller="Customers" asp-action="Index" class="mt-5 inline-flex items-center gap-1 text-xs font-bold text-sky-600 transition hover:gap-2">Ver clientes <span aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><path d="m6 15 4-4 3 2 5-5" /></svg>
+        </div>
+        <p class="mt-5 text-sm text-slate-500">Ventas registradas</p>
+        <p class="mt-1 text-4xl font-black text-slate-950">@Model.SaleCount</p>
+        <a asp-controller="Sales" asp-action="Index" class="mt-5 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 transition hover:gap-2">Ver ventas <span aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm ring-1 ring-amber-200">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+        </div>
+        <p class="mt-5 text-sm text-amber-800">Ventas acumuladas</p>
+        <p class="mt-1 text-3xl font-black text-slate-950">@Model.SalesTotal.ToString("C2")</p>
+        <p class="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><polyline points="20 6 9 17 4 12" /></svg>
+            Sin ventas canceladas
+        </p>
+    </div>
+</div>
+
+<div class="mt-8 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+        <div>
+            <h2 class="flex items-center gap-2 font-black text-slate-950">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-amber-500"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                Ventas recientes
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">Últimos movimientos registrados.</p>
+        </div>
+        <a asp-controller="Sales" asp-action="Index" class="inline-flex items-center gap-1 text-sm font-bold text-amber-600 transition hover:gap-2">Ver todas <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[650px] text-left text-sm">
+            <thead>
+                <tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                    <th class="px-6 py-4">Venta</th>
+                    <th class="px-6 py-4">Cliente</th>
+                    <th class="px-6 py-4">Fecha</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var sale in Model.RecentSales)
+                {
+                    <tr class="transition hover:bg-slate-50">
+                        <td class="px-6 py-4 font-bold text-slate-900">@sale.SaleNumber</td>
+                        <td class="px-6 py-4 text-slate-600">@sale.CustomerName</td>
+                        <td class="px-6 py-4 text-slate-500">@sale.SaleDate.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ring-1 @StatusBadge(sale.Status)">
+                                <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                                @StatusLabel(sale.Status)
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-900">@sale.Total.ToString("C2")</td>
+                    </tr>
+                }
+                @if (!Model.RecentSales.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto h-10 w-10 text-slate-300"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
+                            <p class="mt-3 text-sm font-semibold text-slate-500">Todavía no hay ventas registradas.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

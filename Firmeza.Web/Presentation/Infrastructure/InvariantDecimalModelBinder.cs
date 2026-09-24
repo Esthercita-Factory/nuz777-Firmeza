@@ -2,7 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 
-namespace Firmeza.Web.Infrastructure;
+namespace Firmeza.Web.Presentation.Infrastructure;
 
 public sealed class InvariantDecimalModelBinder : IModelBinder
 {

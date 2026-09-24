@@ -1,4 +1,4 @@
-namespace Firmeza.Web.ViewModels;
+namespace Firmeza.Web.Presentation.ViewModels;
 
 public class DashboardViewModel
 {
