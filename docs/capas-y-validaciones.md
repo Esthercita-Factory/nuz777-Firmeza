@@ -1,42 +1,43 @@
-# Firmeza — Capas y validaciones (resumen)
+# Firmeza: capas y validaciones
 
-UI  →  APPLICATION  →  DOMAIN  →  INFRASTRUCTURE (Repositories + ORM)  →  DB
+```text
+Cliente HTTP -> API -> Application -> Domain
+                         |
+                         v
+                    Infrastructure -> PostgreSQL
+```
 
 ## Capas
 
-1. **UI / Presentation** — Views + ViewModels + Controllers.
-   Valida la ENTRADA: Data Annotations (datos requeridos, rangos, formato), binding decimal invariante.
+1. **API**: controllers, autenticacion JWT, Swagger, CORS, validacion HTTP y ProblemDetails.
+2. **Application**: casos de uso, DTOs, paginacion, puertos de repositorio y `Result`.
+3. **Domain**: entidades, enums, errores de dominio y reglas puras como `InventoryCalculator`.
+4. **Infrastructure**: EF Core, PostgreSQL, Identity, repositorios, transacciones y servicio JWT.
 
-2. **Application** — (por ahora vacía). Futuros Services (SaleService, etc.).
-   Orquesta casos de uso, no conoce EF.
+El proyecto `Firmeza.Web` es un cliente MVC legacy temporal. No forma parte del flujo de la API y reutiliza las capas Domain e Infrastructure para compartir el esquema.
 
-3. **Domain** — Entidades (Customer, Product, Sale, SaleDetail).
-   Reglas puras: `InventoryCalculator` (totales y redondeo).
+## Flujo de una solicitud
 
-4. **Infrastructure / Data** — ApplicationDbContext, Configurations, Migrations. Aquí vive EF.
-   Reglas de BD: índices únicos (SKU, documento, email), FK Restrict, tipos.
-
-5. **Database** — PostgreSQL.
-
-## Flujo de validaciones en un POST
-
-```
-View (JS client-side)
-  → ViewModel (Data Annotations → ModelState)      ← valida formato
-  → Controller (unicidad, coherencia de Ids)        ← valida negocio
-  → Service                                         ← futuro
-  → Repository / EF (SaveChanges)
-  → Constraints BD (únicos, FK)                     ← última red
+```text
+JSON HTTP
+  -> ApiController y DataAnnotations
+  -> Application Service
+  -> Repository / UnitOfWork
+  -> PostgreSQL
+  -> DTO de respuesta o ProblemDetails
 ```
 
-ERROR → vista anterior con mensajes · OK → Redirect + TempData["Message"]
+## Validaciones
 
-## Quién valida qué (en corto)
-
-| Qué | Dónde |
+| Regla | Ubicacion |
 |---|---|
-| Requeridos, rangos, formato | ViewModel (ModelState) |
-| SKU/documento/email únicos | Controller + índice único en BD |
-| Contraseña (≥8, dígito, mayúscula, símbolo) | Identity (Program.cs) |
-| Borrar cliente/producto con ventas | Bloqueado por FK Restrict en BD |
-| Decimales con punto (`1250.50`) | InvariantDecimalModelBinder |
+| Campos requeridos, rangos y formato | DTOs de Application mediante DataAnnotations |
+| SKU, documento y correo unicos | Application + indices unicos de PostgreSQL |
+| Stock disponible y cliente/producto activo | `SaleService` |
+| Totales y redondeo | `InventoryCalculator` en Domain |
+| Descuento concurrente de stock | Transaccion + `SELECT ... FOR UPDATE` |
+| Contraseña y lockout | ASP.NET Core Identity |
+| Access tokens | JWT Bearer |
+| Refresh tokens | Hash SHA-256, rotacion y revocacion en `refresh_tokens` |
+| Errores esperados | `Result` convertido a ProblemDetails |
+| Excepciones no esperadas | `ExceptionHandlingMiddleware` |

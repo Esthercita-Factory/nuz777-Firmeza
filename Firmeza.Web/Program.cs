@@ -1,5 +1,6 @@
-using Firmeza.Web.Infrastructure.Identity;
-using Firmeza.Web.Infrastructure.Persistence;
+using Firmeza.Domain.Identity;
+using Firmeza.Infrastructure.Identity;
+using Firmeza.Infrastructure.Persistence;
 using Firmeza.Web.Presentation.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

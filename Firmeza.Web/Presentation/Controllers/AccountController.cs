@@ -1,4 +1,5 @@
-using Firmeza.Web.Infrastructure.Identity;
+using Firmeza.Domain.Identity;
+using Firmeza.Infrastructure.Identity;
 using Firmeza.Web.Presentation.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

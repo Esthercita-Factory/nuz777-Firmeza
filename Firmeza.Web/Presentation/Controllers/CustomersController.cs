@@ -1,7 +1,8 @@
 using System.Globalization;
-using Firmeza.Web.Infrastructure.Identity;
-using Firmeza.Web.Infrastructure.Persistence;
-using Firmeza.Web.Domain.Entities;
+using Firmeza.Domain.Identity;
+using Firmeza.Infrastructure.Identity;
+using Firmeza.Infrastructure.Persistence;
+using Firmeza.Domain.Entities;
 using Firmeza.Web.Presentation.ViewModels.Customers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

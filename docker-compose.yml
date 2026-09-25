@@ -15,7 +15,7 @@ services:
       timeout: 5s
       retries: 10
 
-  web:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -27,7 +27,12 @@ services:
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=firmeza;Username=postgres;Password=postgres
       SeedAdmin__Email: admin@firmeza.local
       SeedAdmin__Password: Admin123!
-      Https__Enabled: "false"
+      Jwt__Issuer: Firmeza.Api
+      Jwt__Audience: Firmeza.Client
+      Jwt__SigningKey: cambia-esta-clave-por-un-secreto-de-produccion-de-32-bytes
+      Jwt__AccessTokenMinutes: 30
+      Jwt__RefreshTokenDays: 7
+      Database__MigrateOnStartup: "true"
     ports:
       - "8080:8080"
 

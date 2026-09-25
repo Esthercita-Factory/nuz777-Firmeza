@@ -19,4 +19,9 @@
       <PackageReference Include="QuestPDF" Version="2026.9.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Firmeza.Domain\Firmeza.Domain.csproj" />
+      <ProjectReference Include="..\Firmeza.Infrastructure\Firmeza.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>

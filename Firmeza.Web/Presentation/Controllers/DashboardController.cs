@@ -1,6 +1,7 @@
-using Firmeza.Web.Infrastructure.Identity;
-using Firmeza.Web.Infrastructure.Persistence;
-using Firmeza.Web.Domain.Enums;
+using Firmeza.Domain.Identity;
+using Firmeza.Infrastructure.Identity;
+using Firmeza.Infrastructure.Persistence;
+using Firmeza.Domain.Enums;
 using Firmeza.Web.Presentation.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

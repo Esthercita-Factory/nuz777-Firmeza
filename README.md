@@ -1,96 +1,77 @@
 # Firmeza
 
-Panel administrativo Razor MVC para gestionar productos, clientes y ventas de un negocio de materiales de construccion.
+API REST para gestionar productos, clientes y ventas de un negocio de materiales de construccion.
 
-## Stack
+## Arquitectura
 
-- ASP.NET Core MVC sobre .NET 10.
-- PostgreSQL con Entity Framework Core y Npgsql.
-- ASP.NET Core Identity con roles `Administrador` y `Cliente`.
-- Tailwind CSS 4 procesado por Vite.
-- EPPlus y QuestPDF instalados para futuras exportaciones.
-- xUnit para pruebas unitarias.
+La solucion usa arquitectura limpia con dependencias dirigidas hacia el dominio:
 
-## Funcionalidades
+- `Firmeza.Domain`: entidades, enums y reglas puras de negocio.
+- `Firmeza.Application`: casos de uso, DTOs, puertos y resultados.
+- `Firmeza.Infrastructure`: PostgreSQL, EF Core, Identity, repositorios y JWT.
+- `Firmeza.Api`: endpoints HTTP, autenticacion Bearer, Swagger y middleware.
+- `Firmeza.Web`: panel Razor MVC legacy que comparte Domain e Infrastructure mientras se construye el cliente separado.
+- `Firmeza.Tests`: pruebas unitarias de dominio y casos de uso.
 
-- Dashboard con metricas de productos, clientes y ventas.
-- CRUD de productos con busqueda, filtro de activos y validacion de SKU.
-- CRUD de clientes con busqueda, validacion de documento, correo, telefono y edad.
-- Consulta de ventas y detalle de lineas.
-- Registro de clientes y login administrativo.
-- Acceso a las rutas del panel restringido al rol `Administrador`.
-- Migracion automatica al iniciar la aplicacion mediante `Database.MigrateAsync()`.
+La API no depende del proyecto MVC. El MVC se conserva temporalmente para no perder el cliente actual y usa el mismo contexto y las mismas migraciones.
+
+## Endpoints principales
+
+- `POST /api/auth/login`: obtiene access token y refresh token.
+- `POST /api/auth/register`: registra un usuario con rol `Cliente`.
+- `POST /api/auth/refresh`: rota un refresh token.
+- `GET /api/auth/me`: perfil del usuario autenticado.
+- `GET|POST /api/products` y `GET|PUT|DELETE /api/products/{id}`.
+- `GET|POST /api/customers` y `GET|PUT|DELETE /api/customers/{id}`.
+- `GET|POST /api/sales` y `GET /api/sales/{id}`.
+- `GET /api/dashboard`.
+- `GET /health`.
+
+Los endpoints de negocio requieren `Authorization: Bearer <access-token>`. Swagger esta disponible en `/swagger` en desarrollo.
 
 ## Requisitos
 
 - .NET SDK 10.
-- Node.js 22 o superior y npm.
 - PostgreSQL 16 o Docker Desktop.
+- Node.js 22 y npm solo si se ejecuta el panel MVC legacy.
 
-## Instalacion local
+## Ejecucion local de la API
 
-1. Clona el repositorio:
-
-   ```bash
-   git clone https://github.com/Esthercita-Factory/nuz777-Firmeza.git
-   cd nuz777-Firmeza
-   ```
-
-2. Inicia PostgreSQL con Docker Compose. El puerto publicado en la maquina local es `5433`:
+1. Inicia PostgreSQL con Docker Compose. El puerto publicado localmente es `5433`:
 
    ```bash
    docker compose up -d db
    ```
 
-3. Restaura las dependencias .NET:
+2. Restaura y compila:
 
    ```bash
    dotnet restore Firmeza.sln
+   dotnet build Firmeza.sln
    ```
 
-4. Instala las dependencias frontend y genera los assets de Tailwind:
+3. Ejecuta la API:
 
    ```bash
-   cd Firmeza.Web
-   npm install
-   npm run build
-   cd ..
+   dotnet run --project Firmeza.Api --launch-profile http
    ```
 
-5. Ejecuta la aplicacion:
+   Queda disponible en `http://localhost:5180` y Swagger en `http://localhost:5180/swagger`.
 
-   ```bash
-   dotnet run --project Firmeza.Web
-   ```
-
-La aplicacion aplica las migraciones pendientes y crea los roles y el administrador inicial al arrancar. Los valores de `SeedAdmin:Email` y `SeedAdmin:Password` estan en `appsettings.json` para desarrollo; deben reemplazarse por variables de entorno en produccion.
+La API aplica las migraciones pendientes y crea los roles y el administrador inicial al arrancar. En produccion reemplaza `SeedAdmin:Password` y `Jwt:SigningKey` mediante variables de entorno o un gestor de secretos.
 
 ## Migraciones EF Core
 
-Toda la estructura de la base de datos, incluidas las tablas de Identity, se encuentra en `Firmeza.Web/Infrastructure/Persistence/Migrations`. No se usa un script SQL manual.
+Las migraciones estan en `Firmeza.Infrastructure/Persistence/Migrations`. El manifiesto local `dotnet-tools.json` fija `dotnet-ef` en la version 10.0.12.
 
 ```bash
-dotnet ef migrations add NombreDeLaMigracion --project Firmeza.Web
-dotnet ef database update --project Firmeza.Web
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add NombreDeLaMigracion --project Firmeza.Infrastructure --startup-project Firmeza.Infrastructure
+dotnet tool run dotnet-ef database update --project Firmeza.Infrastructure --startup-project Firmeza.Infrastructure
+dotnet tool run dotnet-ef migrations has-pending-model-changes --project Firmeza.Infrastructure --startup-project Firmeza.Infrastructure
 ```
 
-Si `dotnet ef` no esta disponible globalmente:
-
-```bash
-dotnet tool install --global dotnet-ef --version 10.0.12
-```
-
-## Frontend
-
-```bash
-cd Firmeza.Web
-npm install
-npm run build
-# Desarrollo con compilacion automatica:
-npm run dev
-```
-
-Tailwind 4 se configura mediante `@tailwindcss/vite` y `Assets/styles/app.css`. No se usan `tailwind.config.js` ni `postcss.config.js`.
+La migracion `AddRefreshTokens` agrega el almacenamiento necesario para rotar y revocar refresh tokens.
 
 ## Pruebas
 
@@ -104,23 +85,22 @@ dotnet test Firmeza.sln
 docker compose up --build
 ```
 
-## Ejecucion local
+La API queda disponible en `http://localhost:8080` y PostgreSQL en `localhost:5433`.
+
+## Panel MVC legacy
+
+El panel existente sigue disponible para transicion:
 
 ```bash
-docker compose up -d db
+cd Firmeza.Web
+npm install
+npm run build
 dotnet run --project Firmeza.Web --launch-profile http
 ```
 
-La aplicacion queda disponible en `http://localhost:5161` y PostgreSQL en el puerto local `5433`.
-
-Para ejecutar aplicacion y base de datos dentro de Docker:
-
-```bash
-docker compose up --build
-```
-
-En ese caso, la aplicacion queda disponible en `http://localhost:8080`.
+El objetivo de la siguiente fase es sustituirlo por un cliente independiente que consuma la API.
 
 ## Documentacion tecnica
 
-Los diagramas entidad-relacion y de clases estan en `docs/diagrams.md`.
+- `docs/capas-y-validaciones.md`: responsabilidades y flujo de validacion.
+- `docs/diagrams.md`: modelo entidad-relacion.
