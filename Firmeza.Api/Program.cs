@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using Firmeza.Api.Endpoints;
 using Firmeza.Api.Infrastructure;
 using Firmeza.Api.Middleware;
 using Firmeza.Application;
@@ -99,7 +100,9 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+var swaggerEnabled = app.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment());
+
+if (swaggerEnabled)
 {
     app.UseSwagger();
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "Firmeza API v1"));
@@ -110,6 +113,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapApiLandingPage(swaggerEnabled);
 app.MapGet("/health", async (ApplicationDbContext db, CancellationToken cancellationToken) =>
     await db.Database.CanConnectAsync(cancellationToken)
         ? Results.Ok(new { status = "ok" })

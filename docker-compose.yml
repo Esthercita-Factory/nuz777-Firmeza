@@ -33,6 +33,7 @@ services:
       Jwt__AccessTokenMinutes: 30
       Jwt__RefreshTokenDays: 7
       Database__MigrateOnStartup: "true"
+      Swagger__Enabled: "true"
     ports:
       - "8080:8080"
 

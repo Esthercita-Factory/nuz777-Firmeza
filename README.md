@@ -27,7 +27,7 @@ La API no depende del proyecto MVC. El MVC se conserva temporalmente para no per
 - `GET /api/dashboard`.
 - `GET /health`.
 
-Los endpoints de negocio requieren `Authorization: Bearer <access-token>`. Swagger esta disponible en `/swagger` en desarrollo.
+Los endpoints de negocio requieren `Authorization: Bearer <access-token>`. La raiz `/` responde una pagina de inicio con enlaces utiles en el navegador y un resumen JSON si el cliente no acepta `text/html`. Swagger esta disponible en `/swagger` cuando `Swagger:Enabled` es `true`, por defecto en desarrollo.
 
 ## Requisitos
 
@@ -56,7 +56,7 @@ Los endpoints de negocio requieren `Authorization: Bearer <access-token>`. Swagg
    dotnet run --project Firmeza.Api --launch-profile http
    ```
 
-   Queda disponible en `http://localhost:5180` y Swagger en `http://localhost:5180/swagger`.
+   Queda disponible en `http://localhost:5180`, la pagina de inicio en `http://localhost:5180/` y Swagger en `http://localhost:5180/swagger`.
 
 La API aplica las migraciones pendientes y crea los roles y el administrador inicial al arrancar. En produccion reemplaza `SeedAdmin:Password` y `Jwt:SigningKey` mediante variables de entorno o un gestor de secretos.
 
@@ -85,7 +85,7 @@ dotnet test Firmeza.sln
 docker compose up --build
 ```
 
-La API queda disponible en `http://localhost:8080` y PostgreSQL en `localhost:5433`.
+La API queda disponible en `http://localhost:8080`, su pagina de inicio en `http://localhost:8080/` y PostgreSQL en `localhost:5433`. El compose habilita Swagger con `Swagger__Enabled: "true"`, de modo que la UI queda en `http://localhost:8080/swagger`.
 
 ## Panel MVC legacy
 
