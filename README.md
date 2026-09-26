@@ -84,6 +84,9 @@ dotnet test Firmeza.sln
 ```bash
 docker compose up --build
 ```
+```
+Esto de aqui uede demorar un ratito, ten paciencia.
+```
 
 La API queda disponible en `http://localhost:8080`, su pagina de inicio en `http://localhost:8080/` y PostgreSQL en `localhost:5433`. El compose habilita Swagger con `Swagger__Enabled: "true"`, de modo que la UI queda en `http://localhost:8080/swagger`.
 
@@ -95,7 +98,7 @@ El panel existente sigue disponible para transicion:
 cd Firmeza.Web
 npm install
 npm run build
-dotnet run --project Firmeza.Web --launch-profile http
+dotnet run 
 ```
 
 El objetivo de la siguiente fase es sustituirlo por un cliente independiente que consuma la API.
