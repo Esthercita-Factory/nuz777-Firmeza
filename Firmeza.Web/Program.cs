@@ -50,8 +50,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();
 
-using (var scope = app.Services.CreateScope())
+if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
     await IdentitySeeder.SeedAsync(scope.ServiceProvider);

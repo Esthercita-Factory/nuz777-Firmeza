@@ -12,6 +12,13 @@ permissions:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: api
+            dockerfile: Dockerfile
+          - name: web
+            dockerfile: Dockerfile.web
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +37,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}-${{ matrix.name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha
@@ -40,6 +47,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

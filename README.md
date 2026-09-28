@@ -84,11 +84,10 @@ dotnet test Firmeza.sln
 ```bash
 docker compose up --build
 ```
-```
-Esto de aqui uede demorar un ratito, ten paciencia.
-```
 
-La API queda disponible en `http://localhost:8080`, su pagina de inicio en `http://localhost:8080/` y PostgreSQL en `localhost:5433`. El compose habilita Swagger con `Swagger__Enabled: "true"`, de modo que la UI queda en `http://localhost:8080/swagger`.
+El compose levanta PostgreSQL, la API y el panel web. La API queda disponible en `http://localhost:8080`, Swagger en `http://localhost:8080/swagger` y el panel MVC en `http://localhost:8081`. PostgreSQL queda publicado en `localhost:5433`.
+
+Las imágenes publicadas en GHCR son `ghcr.io/esthercita-factory/nuz777-firmeza-api:latest` y `ghcr.io/esthercita-factory/nuz777-firmeza-web:latest`. Para usar esas imágenes sin reconstruirlas, ejecuta `docker compose pull` y después `docker compose up -d`.
 
 ## Panel MVC legacy
 

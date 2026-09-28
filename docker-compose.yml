@@ -16,6 +16,7 @@ services:
       retries: 10
 
   api:
+    image: ${FIRMEZA_API_IMAGE:-ghcr.io/esthercita-factory/nuz777-firmeza-api:latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -36,6 +37,27 @@ services:
       Swagger__Enabled: "true"
     ports:
       - "8080:8080"
+
+  web:
+    image: ${FIRMEZA_WEB_IMAGE:-ghcr.io/esthercita-factory/nuz777-firmeza-web:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=firmeza;Username=postgres;Password=postgres
+      SeedAdmin__Email: admin@firmeza.local
+      SeedAdmin__Password: Admin123!
+      Https__Enabled: "false"
+      Database__MigrateOnStartup: "false"
+    ports:
+      - "8081:8080"
 
 volumes:
   firmeza-postgres:
