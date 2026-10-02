@@ -57,6 +57,12 @@ public sealed class ProductRepository : IProductRepository
     public Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default)
         => _db.SaleDetails.AnyAsync(detail => detail.ProductId == id, cancellationToken);
 
+    public Task<Product?> FindBySkuAsync(string sku, CancellationToken cancellationToken = default)
+        => _db.Products.FirstOrDefaultAsync(product => product.Sku == sku.Trim().ToUpperInvariant(), cancellationToken);
+
+    public async Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken cancellationToken = default)
+        => await _db.Products.AsNoTracking().OrderBy(p => p.Name).ToListAsync(cancellationToken);
+
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
         await _db.Products.AddAsync(product, cancellationToken);

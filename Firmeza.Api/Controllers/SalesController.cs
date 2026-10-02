@@ -1,3 +1,4 @@
+using Firmeza.Application.Abstractions;
 using Firmeza.Application.Common;
 using Firmeza.Application.Dtos.Sales;
 using Firmeza.Application.Services.Sales;
@@ -45,5 +46,45 @@ public sealed class SalesController : ControllerBase
         }
 
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result);
+    }
+
+    /// <summary>Descarga el comprobante/recibo oficial en formato PDF.</summary>
+    [HttpGet("{id:guid}/receipt")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadReceipt(
+        Guid id,
+        [FromServices] ISaleRepository saleRepository,
+        [FromServices] Firmeza.Application.Services.Receipts.IReceiptService receiptService,
+        CancellationToken cancellationToken)
+    {
+        var sale = await saleRepository.FindWithDetailsAsync(id, cancellationToken);
+        if (sale is null)
+        {
+            return NotFound();
+        }
+
+        var pdfBytes = receiptService.GenerateReceiptPdf(sale);
+        return File(pdfBytes, "application/pdf", $"recibo_{sale.SaleNumber}.pdf");
+    }
+
+    /// <summary>Exporta el consolidado de ventas a Excel (.xlsx).</summary>
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromServices] Firmeza.Application.Services.Exports.IExportService exportService,
+        CancellationToken cancellationToken)
+    {
+        var bytes = await exportService.ExportSalesToExcelAsync(cancellationToken);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ventas_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+    }
+
+    /// <summary>Exporta el consolidado de ventas a PDF.</summary>
+    [HttpGet("export/pdf")]
+    public async Task<IActionResult> ExportPdf(
+        [FromServices] Firmeza.Application.Services.Exports.IExportService exportService,
+        CancellationToken cancellationToken)
+    {
+        var bytes = await exportService.ExportSalesToPdfAsync(cancellationToken);
+        return File(bytes, "application/pdf", $"ventas_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
     }
 }

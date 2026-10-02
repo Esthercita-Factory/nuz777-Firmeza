@@ -41,6 +41,12 @@ public sealed class CustomerRepository : ICustomerRepository
     public Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default)
         => _db.Sales.AnyAsync(sale => sale.CustomerId == id, cancellationToken);
 
+    public Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default)
+        => _db.Customers.FirstOrDefaultAsync(customer => customer.Document == document.Trim(), cancellationToken);
+
+    public async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default)
+        => await _db.Customers.AsNoTracking().OrderBy(c => c.FullName).ToListAsync(cancellationToken);
+
     public async Task AddAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         await _db.Customers.AddAsync(customer, cancellationToken);

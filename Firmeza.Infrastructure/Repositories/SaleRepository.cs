@@ -51,6 +51,15 @@ public sealed class SaleRepository : ISaleRepository
     public Task<Sale?> FindByNumberAsync(string saleNumber, CancellationToken cancellationToken = default)
         => _db.Sales.FirstOrDefaultAsync(sale => sale.SaleNumber == saleNumber, cancellationToken);
 
+    public async Task<IReadOnlyList<Sale>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
+        => await _db.Sales
+            .AsNoTracking()
+            .Include(sale => sale.Customer)
+            .Include(sale => sale.Details)
+            .ThenInclude(detail => detail.Product)
+            .OrderByDescending(sale => sale.SaleDate)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(Sale sale, CancellationToken cancellationToken = default)
     {
         await _db.Sales.AddAsync(sale, cancellationToken);

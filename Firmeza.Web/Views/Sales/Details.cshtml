@@ -1,3 +1,92 @@
 @model SaleDetailsViewModel
-@{ ViewData["Title"] = "Detalle de venta"; }
-<div class="mx-auto max-w-4xl"><a asp-action="Index" class="text-sm font-bold text-amber-600">← Volver a ventas</a><div class="mt-5 flex flex-wrap items-end justify-between gap-4"><div><p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Venta</p><h1 class="mt-2 text-3xl font-black">@Model.SaleNumber</h1><p class="mt-2 text-slate-500">@Model.CustomerName · @Model.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p></div><span class="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700">@Model.Status</span></div><div class="mt-8 overflow-hidden rounded-2xl bg-white shadow-sm"><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Producto</th><th class="px-6 py-4">Código</th><th class="px-6 py-4 text-right">Cantidad</th><th class="px-6 py-4 text-right">Precio</th><th class="px-6 py-4 text-right">Subtotal</th></tr></thead><tbody class="divide-y divide-slate-100">@foreach (var detail in Model.Details) {<tr><td class="px-6 py-4 font-bold">@detail.ProductName</td><td class="px-6 py-4 font-mono text-xs text-slate-500">@detail.ProductSku</td><td class="px-6 py-4 text-right">@detail.Quantity</td><td class="px-6 py-4 text-right">@detail.UnitPrice.ToString("C2")</td><td class="px-6 py-4 text-right font-bold">@detail.Subtotal.ToString("C2")</td></tr>}</tbody><tfoot class="border-t border-slate-200"><tr><td colspan="4" class="px-6 py-5 text-right text-sm font-bold text-slate-500">Total</td><td class="px-6 py-5 text-right text-xl font-black">@Model.Total.ToString("C2")</td></tr></tfoot></table></div></div><div class="mt-5 rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm"><span class="font-bold text-slate-900">Documento del cliente:</span> @Model.CustomerDocument</div></div>
+@{
+    ViewData["Title"] = "Detalle de venta";
+    var subtotalBase = Math.Round(Model.Total / 1.19m, 2);
+    var iva = Model.Total - subtotalBase;
+}
+
+<div class="mx-auto max-w-4xl">
+    <div class="flex items-center justify-between">
+        <a asp-action="Index" class="text-sm font-bold text-amber-600 hover:text-amber-500">← Volver a ventas</a>
+        <a asp-action="DownloadReceipt" asp-route-id="@Model.Id" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-500">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
+            Descargar Recibo (PDF)
+        </a>
+    </div>
+
+    <div class="mt-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Comprobante de Venta</p>
+            <h1 class="mt-1 text-3xl font-black text-slate-950">@Model.SaleNumber</h1>
+            <p class="mt-1 text-slate-500">@Model.CustomerName · @Model.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+        </div>
+        <span class="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700">@Model.Status</span>
+    </div>
+
+    <!-- Tarjeta de Cliente -->
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+        <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Información del Cliente</h3>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+                <span class="block text-xs text-slate-400">Nombre / Razón Social:</span>
+                <span class="font-bold text-slate-900">@Model.CustomerName</span>
+            </div>
+            <div>
+                <span class="block text-xs text-slate-400">Documento / NIT:</span>
+                <span class="font-mono font-bold text-slate-900">@Model.CustomerDocument</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle de Productos -->
+    <div class="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-4">Producto</th>
+                        <th class="px-6 py-4">Código</th>
+                        <th class="px-6 py-4 text-right">Cantidad</th>
+                        <th class="px-6 py-4 text-right">Precio</th>
+                        <th class="px-6 py-4 text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var detail in Model.Details)
+                    {
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-900">@detail.ProductName</td>
+                            <td class="px-6 py-4 font-mono text-xs text-slate-500">@detail.ProductSku</td>
+                            <td class="px-6 py-4 text-right">@detail.Quantity</td>
+                            <td class="px-6 py-4 text-right">@detail.UnitPrice.ToString("C2")</td>
+                            <td class="px-6 py-4 text-right font-bold text-slate-900">@detail.Subtotal.ToString("C2")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="border-t border-slate-200 bg-slate-50/50">
+                    <tr>
+                        <td colspan="4" class="px-6 py-3 text-right text-xs font-semibold text-slate-500">Subtotal (Base):</td>
+                        <td class="px-6 py-3 text-right text-sm font-bold text-slate-700">@subtotalBase.ToString("C2")</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" class="px-6 py-3 text-right text-xs font-semibold text-slate-500">IVA (19%):</td>
+                        <td class="px-6 py-3 text-right text-sm font-bold text-slate-700">@iva.ToString("C2")</td>
+                    </tr>
+                    <tr class="border-t border-slate-200">
+                        <td colspan="4" class="px-6 py-4 text-right text-base font-black text-slate-900">Total a Pagar:</td>
+                        <td class="px-6 py-4 text-right text-2xl font-black text-amber-600">@Model.Total.ToString("C2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Aviso del Comprobante Almacenado -->
+    <div class="mt-6 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 text-xs text-slate-500 shadow-sm">
+        <div class="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-emerald-500"><polyline points="20 6 9 17 4 12" /></svg>
+            <span>Comprobante PDF almacenado en <code class="font-mono font-bold text-slate-700">wwwroot/recibos/@(Model.SaleNumber).pdf</code></span>
+        </div>
+        <a href="~/recibos/@(Model.SaleNumber).pdf" target="_blank" class="font-bold text-amber-600 hover:text-amber-500">Abrir archivo directo →</a>
+    </div>
+</div>

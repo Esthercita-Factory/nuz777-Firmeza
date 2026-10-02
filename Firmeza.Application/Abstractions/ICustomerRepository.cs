@@ -17,6 +17,10 @@ public interface ICustomerRepository
 
     Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task AddAsync(Customer customer, CancellationToken cancellationToken = default);
 
     void Remove(Customer customer);

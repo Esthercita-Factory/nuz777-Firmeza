@@ -1,8 +1,11 @@
 using Firmeza.Application.Abstractions;
 using Firmeza.Application.Services.Auth;
+using Firmeza.Application.Services.BulkImport;
 using Firmeza.Application.Services.Customers;
 using Firmeza.Application.Services.Dashboard;
+using Firmeza.Application.Services.Exports;
 using Firmeza.Application.Services.Products;
+using Firmeza.Application.Services.Receipts;
 using Firmeza.Application.Services.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +20,9 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ISaleService, SaleService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IBulkImportService, BulkImportService>();
+        services.AddScoped<IExportService, ExportService>();
+        services.AddScoped<IReceiptService, ReceiptService>();
 
         return services;
     }

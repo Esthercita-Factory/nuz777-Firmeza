@@ -1,5 +1,73 @@
 @model IEnumerable<SaleListItemViewModel>
-@{ ViewData["Title"] = "Ventas"; var query = ViewData["Query"] as string; }
-<div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Movimiento comercial</p><h1 class="mt-2 text-3xl font-black tracking-tight">Ventas</h1><p class="mt-2 text-slate-500">Consulta las operaciones registradas en el negocio.</p></div><span class="rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-500 shadow-sm">@(Model.Count()) registros</span></div>
-<form method="get" class="mt-8 flex gap-3"><input name="q" value="@query" placeholder="Buscar por número o cliente..." class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" /><button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">Buscar</button></form>
-<div class="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm"><div class="overflow-x-auto"><table class="w-full min-w-[750px] text-left text-sm"><thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-6 py-4">Venta</th><th class="px-6 py-4">Cliente</th><th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Estado</th><th class="px-6 py-4 text-right">Total</th><th class="px-6 py-4 text-right">Detalle</th></tr></thead><tbody class="divide-y divide-slate-100">@foreach (var sale in Model) {<tr class="hover:bg-amber-50/40"><td class="px-6 py-4 font-bold text-slate-900">@sale.SaleNumber</td><td class="px-6 py-4 text-slate-600">@sale.CustomerName</td><td class="px-6 py-4 text-slate-500">@sale.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td class="px-6 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">@sale.Status</span></td><td class="px-6 py-4 text-right font-bold">@sale.Total.ToString("C2")</td><td class="px-6 py-4 text-right"><a asp-action="Details" asp-route-id="@sale.Id" class="font-bold text-amber-600">Ver venta</a></td></tr>}@if (!Model.Any()) {<tr><td colspan="6" class="px-6 py-14 text-center text-slate-500">No hay ventas registradas.</td></tr>}</tbody></table></div></div>
+@{
+    ViewData["Title"] = "Ventas";
+    var query = ViewData["Query"] as string;
+}
+
+<div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Movimiento comercial</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Ventas</h1>
+        <p class="mt-2 text-slate-500">Consulta las operaciones registradas y genera comprobantes.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        <a asp-action="ExportExcel" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-emerald-500 hover:text-emerald-600">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-emerald-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            Exportar Excel
+        </a>
+        <a asp-action="ExportPdf" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-rose-500 hover:text-rose-600">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-rose-600"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+            Exportar PDF
+        </a>
+        <a asp-action="Create" class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-amber-100 transition hover:bg-amber-300">+ Nueva venta</a>
+    </div>
+</div>
+
+<form method="get" class="mt-8 flex gap-3">
+    <input name="q" value="@query" placeholder="Buscar por número o cliente..." class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+    <button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">Buscar</button>
+</form>
+
+<div class="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[750px] text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                <tr>
+                    <th class="px-6 py-4">Venta</th>
+                    <th class="px-6 py-4">Cliente</th>
+                    <th class="px-6 py-4">Fecha</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Total</th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var sale in Model)
+                {
+                    <tr class="hover:bg-amber-50/40">
+                        <td class="px-6 py-4 font-bold text-slate-900">@sale.SaleNumber</td>
+                        <td class="px-6 py-4 text-slate-600">@sale.CustomerName</td>
+                        <td class="px-6 py-4 text-slate-500">@sale.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="px-6 py-4">
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">@sale.Status</span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-900">@sale.Total.ToString("C2")</td>
+                        <td class="px-6 py-4 text-right space-x-3">
+                            <a asp-action="DownloadReceipt" asp-route-id="@sale.Id" target="_blank" class="inline-flex items-center gap-1 font-bold text-rose-600 hover:text-rose-500">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                Recibo PDF
+                            </a>
+                            <a asp-action="Details" asp-route-id="@sale.Id" class="font-bold text-amber-600 hover:text-amber-500">Ver venta</a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-14 text-center text-slate-500">No hay ventas registradas.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

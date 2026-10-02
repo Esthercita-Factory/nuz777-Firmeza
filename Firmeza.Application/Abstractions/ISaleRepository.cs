@@ -14,5 +14,7 @@ public interface ISaleRepository
 
     Task<Sale?> FindByNumberAsync(string saleNumber, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Sale>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
+
     Task AddAsync(Sale sale, CancellationToken cancellationToken = default);
 }

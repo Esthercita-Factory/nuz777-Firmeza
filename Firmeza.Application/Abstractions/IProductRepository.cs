@@ -17,6 +17,10 @@ public interface IProductRepository
 
     Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Product?> FindBySkuAsync(string sku, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Product>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
 
     void Remove(Product product);

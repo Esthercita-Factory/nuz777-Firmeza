@@ -8,7 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="EPPlus" Version="8.7.1" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+      <PackageReference Include="QuestPDF" Version="2026.9.0" />
     </ItemGroup>
 
     <ItemGroup>

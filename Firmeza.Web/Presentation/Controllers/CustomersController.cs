@@ -8,16 +8,34 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using Firmeza.Application.Services.Exports;
+
 namespace Firmeza.Web.Presentation.Controllers;
 
 [Authorize(Roles = ApplicationRoles.Administrator)]
 public class CustomersController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly IExportService _exportService;
 
-    public CustomersController(ApplicationDbContext db)
+    public CustomersController(ApplicationDbContext db, IExportService exportService)
     {
         _db = db;
+        _exportService = exportService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportExcel(CancellationToken cancellationToken)
+    {
+        var bytes = await _exportService.ExportCustomersToExcelAsync(cancellationToken);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"directorio_clientes_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(CancellationToken cancellationToken)
+    {
+        var bytes = await _exportService.ExportCustomersToPdfAsync(cancellationToken);
+        return File(bytes, "application/pdf", $"directorio_clientes_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
     }
 
     public async Task<IActionResult> Index(string? q, bool soloActivos = false)

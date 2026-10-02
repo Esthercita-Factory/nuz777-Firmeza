@@ -1,0 +1,199 @@
+@using Firmeza.Application.Services.BulkImport
+@model ImportResult?
+@{
+    ViewData["Title"] = "Carga Masiva";
+}
+
+<div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Procesamiento automático</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Carga Masiva de Datos</h1>
+        <p class="mt-2 text-slate-500">Importa datos desnormalizados o mezclados mediante archivos Excel (.xlsx).</p>
+    </div>
+    <a asp-action="DownloadTemplate" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-amber-400 hover:text-amber-600">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-emerald-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+        Descargar Plantilla (.xlsx)
+    </a>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">
+        @ViewBag.ErrorMessage
+    </div>
+}
+
+<div class="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <!-- Formulario de Subida -->
+    <div class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+        <h2 class="flex items-center gap-2 text-lg font-black text-slate-950">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-amber-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            Seleccionar archivo Excel
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">Selecciona o arrastra tu archivo .xlsx con datos de productos, clientes o ventas.</p>
+
+        <form asp-action="Upload" method="post" enctype="multipart/form-data" class="mt-6 space-y-5">
+            @Html.AntiForgeryToken()
+            <div class="flex justify-center rounded-2xl border-2 border-dashed border-slate-200 px-6 py-10 transition hover:border-amber-400 hover:bg-amber-50/20">
+                <div class="text-center">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto h-12 w-12 text-slate-400"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M12 18v-6" /><path d="m9 15 3-3 3 3" /></svg>
+                    <div class="mt-4 flex text-sm leading-6 text-slate-600">
+                        <label for="file" class="relative cursor-pointer rounded-md font-bold text-amber-600 focus-within:outline-none hover:text-amber-500">
+                            <span>Selecciona un archivo</span>
+                            <input id="file" name="file" type="file" accept=".xlsx" class="sr-only" required />
+                        </label>
+                        <p class="pl-1">o arrástralo aquí</p>
+                    </div>
+                    <p class="text-xs text-slate-400">Archivos soportados: Microsoft Excel (.xlsx)</p>
+                    <p id="file-name-display" class="mt-2 text-xs font-bold text-slate-700"></p>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full rounded-xl bg-slate-950 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-slate-200 transition hover:bg-amber-500 hover:text-slate-950">
+                Procesar y Normalizar Datos
+            </button>
+        </form>
+    </div>
+
+    <!-- Guía y Reglas del Sistema -->
+    <div class="space-y-4">
+        <div class="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-orange-50/50 p-6">
+            <h3 class="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-amber-900">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-amber-600"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                ¿Cómo funciona la desnormalización?
+            </h3>
+            <ul class="mt-4 space-y-3 text-xs leading-5 text-amber-950">
+                <li class="flex items-start gap-2">
+                    <span class="font-bold text-amber-600">✓</span>
+                    <span><strong>Tablas mezcladas:</strong> Si el archivo tiene columnas de clientes y productos en la misma fila, el sistema las divide e identifica automáticamente.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="font-bold text-amber-600">✓</span>
+                    <span><strong>Normalización en memoria:</strong> Evita duplicados agrupando clientes por documento y productos por código/SKU antes de guardar.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="font-bold text-amber-600">✓</span>
+                    <span><strong>Actualización inteligente (Upsert):</strong> Si el producto o cliente ya existe, se actualizan sus valores; si es nuevo, se inserta.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="font-bold text-amber-600">✓</span>
+                    <span><strong>Validación estricta:</strong> Precios ≥ 0, stock numérico, nombres y documentos requeridos. Los errores se registran en el log inferior.</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-500">Columnas reconocidas automáticamente</h3>
+            <div class="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Código / SKU</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Producto / Nombre</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Precio / Costo</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Stock</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Documento / Cédula</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Cliente / Nombre</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Teléfono</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Correo</span>
+                <span class="rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-medium text-slate-700">Cantidad</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model != null)
+{
+    <div class="mt-12">
+        <h2 class="text-xl font-black text-slate-950">Resultados del Procesamiento</h2>
+
+        <!-- Resumen de Métricas -->
+        <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <p class="text-xs font-bold text-slate-400">Total Filas Leídas</p>
+                <p class="mt-2 text-3xl font-black text-slate-900">@Model.TotalRowsProcessed</p>
+            </div>
+            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
+                <p class="text-xs font-bold text-emerald-700">Productos (Nuevos / Act.)</p>
+                <p class="mt-2 text-3xl font-black text-emerald-900">@Model.ProductsCreated <span class="text-lg font-normal text-emerald-600">/ @Model.ProductsUpdated</span></p>
+            </div>
+            <div class="rounded-2xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
+                <p class="text-xs font-bold text-sky-700">Clientes (Nuevos / Act.)</p>
+                <p class="mt-2 text-3xl font-black text-sky-900">@Model.CustomersCreated <span class="text-lg font-normal text-sky-600">/ @Model.CustomersUpdated</span></p>
+            </div>
+            <div class="rounded-2xl border border-amber-100 bg-amber-50/50 p-5 shadow-sm">
+                <p class="text-xs font-bold text-amber-700">Ventas Registradas</p>
+                <p class="mt-2 text-3xl font-black text-amber-900">@Model.SalesCreated</p>
+            </div>
+        </div>
+
+        <!-- Log de Errores e Inconsistencias -->
+        @if (Model.Errors.Count > 0 || Model.Warnings.Count > 0)
+        {
+            <div class="mt-8 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900">Log de Inconsistencias y Errores Detectados</h3>
+                        <p class="text-xs text-slate-500">Se encontraron @Model.Errors.Count errores y @Model.Warnings.Count advertencias durante la validación.</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                            <tr>
+                                <th class="px-6 py-3">Tipo</th>
+                                <th class="px-6 py-3">Hoja</th>
+                                <th class="px-6 py-3">Fila</th>
+                                <th class="px-6 py-3">Campo</th>
+                                <th class="px-6 py-3">Mensaje</th>
+                                <th class="px-6 py-3">Valor Original</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            @foreach (var error in Model.Errors)
+                            {
+                                <tr class="hover:bg-rose-50/40">
+                                    <td class="px-6 py-3">
+                                        <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black text-rose-700">ERROR</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-slate-600">@error.SheetName</td>
+                                    <td class="px-6 py-3 font-mono font-bold text-slate-900">@error.RowNumber</td>
+                                    <td class="px-6 py-3 font-semibold text-slate-800">@error.Field</td>
+                                    <td class="px-6 py-3 text-rose-700">@error.Message</td>
+                                    <td class="px-6 py-3 font-mono text-slate-400">@(error.RawValue ?? "-")</td>
+                                </tr>
+                            }
+                            @foreach (var warning in Model.Warnings)
+                            {
+                                <tr class="hover:bg-amber-50/40">
+                                    <td class="px-6 py-3">
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-800">ADVERTENCIA</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-slate-600">@warning.SheetName</td>
+                                    <td class="px-6 py-3 font-mono font-bold text-slate-900">@warning.RowNumber</td>
+                                    <td class="px-6 py-3 font-semibold text-slate-800">@warning.Field</td>
+                                    <td class="px-6 py-3 text-amber-800">@warning.Message</td>
+                                    <td class="px-6 py-3 font-mono text-slate-400">@(warning.RawValue ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const fileInput = document.getElementById("file");
+        const fileNameDisplay = document.getElementById("file-name-display");
+        if (fileInput && fileNameDisplay) {
+            fileInput.addEventListener("change", (e) => {
+                if (fileInput.files.length > 0) {
+                    fileNameDisplay.textContent = "Archivo seleccionado: " + fileInput.files[0].name;
+                } else {
+                    fileNameDisplay.textContent = "";
+                }
+            });
+        }
+    </script>
+}

@@ -66,4 +66,24 @@ public sealed class CustomersController : ControllerBase
 
         return result.IsSuccess ? NoContent() : new ObjectResult(result) { StatusCode = StatusCodes.Status409Conflict };
     }
+
+    /// <summary>Exporta el directorio de clientes a Excel (.xlsx).</summary>
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromServices] Firmeza.Application.Services.Exports.IExportService exportService,
+        CancellationToken cancellationToken)
+    {
+        var bytes = await exportService.ExportCustomersToExcelAsync(cancellationToken);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"clientes_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+    }
+
+    /// <summary>Exporta el directorio de clientes a PDF.</summary>
+    [HttpGet("export/pdf")]
+    public async Task<IActionResult> ExportPdf(
+        [FromServices] Firmeza.Application.Services.Exports.IExportService exportService,
+        CancellationToken cancellationToken)
+    {
+        var bytes = await exportService.ExportCustomersToPdfAsync(cancellationToken);
+        return File(bytes, "application/pdf", $"clientes_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+    }
 }
