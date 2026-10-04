@@ -219,7 +219,9 @@ import { LogoComponent } from '../Layout/Shell.Component';
             <article class="rounded-xl border border-slate-200 bg-white p-6 transition hover:border-slate-300 hover:shadow-md">
               <div class="flex items-center gap-3">
                 <span class="flex h-10 w-10 items-center justify-center rounded-lg" [class]="module.iconClass">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="h-5 w-5" [attr.d]="module.icon" />
+                  <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="h-5 w-5">
+                    <path [attr.d]="module.icon" />
+                  </svg>
                 </span>
                 <h3 class="text-base font-semibold text-slate-900">{{ module.title }}</h3>
               </div>

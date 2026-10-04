@@ -1,8 +1,15 @@
+import { environment } from '../../environments/environment';
+
 /**
  * URL base de Firmeza.Api.
- * Cambiar aqui cuando la API se ejecute en otro host o puerto.
+ *
+ * Viene del archivo de entorno que Angular sustituye en cada build:
+ * - development (npm start): puerto 5180, la API con `dotnet run --launch-profile http`.
+ * - production (npm run build, y la imagen de Docker): puerto 8080, el mapeo de docker-compose.
+ *
+ * Ver client/src/environments/.
  */
-export const API_URL = 'http://localhost:5180/api';
+export const API_URL = environment.apiUrl;
 
 /** ProblemDetails de la API: detalle legible y errores por campo. */
 export interface ApiError {
