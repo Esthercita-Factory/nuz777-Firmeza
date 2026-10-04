@@ -315,7 +315,7 @@ public sealed class BulkImportService : IBulkImportService
                             DateTimeOffset saleDate = _clock.UtcNow;
                             if (rowSaleFields.TryGetValue("SaleDate", out var rawDate) && DateTimeOffset.TryParse(rawDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                             {
-                                saleDate = parsedDate;
+                                saleDate = parsedDate.ToUniversalTime();
                             }
 
                             normalizedSaleLines.Add(new NormalizedSaleRecord

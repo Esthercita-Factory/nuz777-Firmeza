@@ -22,7 +22,7 @@
                     <span><span class="block text-lg font-black tracking-tight">Firmeza</span><span class="text-xs text-slate-500">Panel administrativo</span></span>
                 </a>
                 <nav class="space-y-1" aria-label="Navegación principal">
-                    <a asp-controller="Angular" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950">Inicio</a>
+                    <a asp-controller="Home" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950">Inicio</a>
                     <a asp-controller="Products" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950">Productos</a>
                     <a asp-controller="Customers" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950">Clientes</a>
                     <a asp-controller="Sales" asp-action="Index" class="block rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950">Ventas</a>
@@ -31,7 +31,10 @@
                 <div class="mt-auto border-t border-white/60 pt-5">
                     <p class="truncate px-4 text-xs text-slate-500">@User.Identity?.Name</p>
                     <form asp-controller="Account" asp-action="Logout" method="post" class="mt-2">
-                        <button type="submit" class="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-600 transition hover:bg-white/70 hover:text-slate-950">Cerrar sesión</button>
+                        <button type="submit" class="w-full rounded-xl px-4 py-3 flex items-center gap-2 text-left text-sm font-semibold text-slate-600 transition-colors duration-200 bg-white border border-slate-200 hover:bg-blue-50 hover:text-blue-600 shadow-sm">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                            Cerrar sesión
+                        </button>
                     </form>
                 </div>
             </div>
@@ -61,7 +64,7 @@
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole(ApplicationRoles.Administrator))
                     {
                         <div class="flex items-center gap-3 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-4 shadow-sm transition hover:border-blue-300">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-black uppercase text-blue-400">@initials</span>
+                            <img src="~/img/admin.png" alt="Admin profile" class="h-8 w-8 rounded-full object-cover">
                             <span class="hidden text-sm font-bold text-slate-700 sm:block">@displayName</span>
                             <span class="hidden rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-700 sm:block">Admin</span>
                         </div>
@@ -115,6 +118,7 @@
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation/dist/additional-methods.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="~/dist/main.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
