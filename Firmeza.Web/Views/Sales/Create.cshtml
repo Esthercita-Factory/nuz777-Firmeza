@@ -5,11 +5,11 @@
 }
 
 <div class="mx-auto max-w-4xl">
-    <a asp-action="Index" class="text-sm font-bold text-amber-600 hover:text-amber-500">← Volver a ventas</a>
+    <a asp-action="Index" class="text-sm font-bold text-blue-600 hover:text-blue-500">← Volver a ventas</a>
     
     <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Operación comercial</p>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-blue-600">Operación comercial</p>
             <h1 class="mt-1 text-3xl font-black text-slate-950">Registrar Nueva Venta</h1>
             <p class="mt-1 text-slate-500">Selecciona el cliente y los productos. El recibo PDF se generará automáticamente.</p>
         </div>
@@ -32,7 +32,7 @@
 
             <div class="mt-5">
                 <label asp-for="CustomerId" class="block text-xs font-bold uppercase tracking-wider text-slate-700">Cliente *</label>
-                <select asp-for="CustomerId" class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100" required>
+                <select asp-for="CustomerId" class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" required>
                     <option value="">-- Selecciona un cliente --</option>
                     @foreach (var c in Model.Customers)
                     {
@@ -50,7 +50,7 @@
                     <h2 class="text-base font-black text-slate-950">2. Productos y Materiales</h2>
                     <p class="mt-1 text-xs text-slate-500">Agrega los ítems que conforman la orden de venta.</p>
                 </div>
-                <button type="button" id="btn-add-line" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-200">
+                <button type="button" id="btn-add-line" class="inline-flex items-center gap-1.5 rounded-xl bg-blue-100 px-4 py-2 text-xs font-bold text-blue-800 transition hover:bg-blue-200">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path d="M12 5v14M5 12h14" /></svg>
                     Agregar producto
                 </button>
@@ -91,7 +91,7 @@
                     </div>
                     <div class="flex justify-between border-t border-slate-200 pt-2 text-base font-black text-slate-950">
                         <span>Total a Pagar:</span>
-                        <span id="summary-total" class="text-xl text-amber-600">$0.00</span>
+                        <span id="summary-total" class="text-xl text-blue-600">$0.00</span>
                     </div>
                 </div>
             </div>
@@ -99,7 +99,7 @@
 
         <div class="flex justify-end gap-3">
             <a asp-action="Index" class="rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 shadow-sm hover:border-slate-400">Cancelar</a>
-            <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-200 transition hover:bg-amber-500 hover:text-slate-950">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-200 transition hover:bg-blue-500 hover:text-slate-950">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                 Registrar Venta y Generar Recibo PDF
             </button>
@@ -153,7 +153,7 @@
 
         function addLine() {
             const tr = document.createElement("tr");
-            tr.className = "hover:bg-amber-50/20";
+            tr.className = "hover:bg-blue-50/20";
             
             let optionsHtml = '<option value="">-- Elegir producto --</option>';
             productsData.forEach(p => {
@@ -162,16 +162,16 @@
 
             tr.innerHTML = `
                 <td class="px-4 py-3">
-                    <select name="Lines[${lineIndex}].ProductId" class="product-select block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-amber-400" required>
+                    <select name="Lines[${lineIndex}].ProductId" class="product-select block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400" required>
                         ${optionsHtml}
                     </select>
                 </td>
                 <td class="px-4 py-3 text-center font-mono text-xs text-slate-500 stock-cell">-</td>
                 <td class="px-4 py-3 text-center">
-                    <input type="number" name="Lines[${lineIndex}].Quantity" value="1" min="1" class="line-qty w-20 rounded-lg border border-slate-300 px-2.5 py-1.5 text-center text-xs outline-none focus:border-amber-400" required />
+                    <input type="number" name="Lines[${lineIndex}].Quantity" value="1" min="1" class="line-qty w-20 rounded-lg border border-slate-300 px-2.5 py-1.5 text-center text-xs outline-none focus:border-blue-400" required />
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <input type="number" step="0.01" name="Lines[${lineIndex}].UnitPrice" value="0" min="0" class="line-price w-28 rounded-lg border border-slate-300 px-2.5 py-1.5 text-right text-xs outline-none focus:border-amber-400" required />
+                    <input type="number" step="0.01" name="Lines[${lineIndex}].UnitPrice" value="0" min="0" class="line-price w-28 rounded-lg border border-slate-300 px-2.5 py-1.5 text-right text-xs outline-none focus:border-blue-400" required />
                 </td>
                 <td class="px-4 py-3 text-right font-bold text-slate-900 line-subtotal">$0.00</td>
                 <td class="px-4 py-3 text-center">

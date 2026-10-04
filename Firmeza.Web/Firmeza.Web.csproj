@@ -24,4 +24,8 @@
       <ProjectReference Include="..\Firmeza.Infrastructure\Firmeza.Infrastructure.csproj" />
     </ItemGroup>
 
+    <Target Name="BuildFrontendAssets" BeforeTargets="Build" Condition="Exists('$(MSBuildProjectDirectory)/node_modules') AND '$(SkipFrontendBuild)' != 'true'">
+        <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    </Target>
+
 </Project>

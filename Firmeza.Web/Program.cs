@@ -88,7 +88,7 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Angular}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.Run();

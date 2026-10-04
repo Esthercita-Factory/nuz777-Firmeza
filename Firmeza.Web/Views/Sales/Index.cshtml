@@ -6,7 +6,7 @@
 
 <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-        <p class="text-sm font-black uppercase tracking-[0.2em] text-amber-600">Movimiento comercial</p>
+        <p class="text-sm font-black uppercase tracking-[0.2em] text-blue-600">Movimiento comercial</p>
         <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Ventas</h1>
         <p class="mt-2 text-slate-500">Consulta las operaciones registradas y genera comprobantes.</p>
     </div>
@@ -19,12 +19,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-rose-600"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
             Exportar PDF
         </a>
-        <a asp-action="Create" class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-amber-100 transition hover:bg-amber-300">+ Nueva venta</a>
+        <a asp-action="Create" class="rounded-xl bg-blue-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-blue-100 transition hover:bg-blue-300">+ Nueva venta</a>
     </div>
 </div>
 
 <form method="get" class="mt-8 flex gap-3">
-    <input name="q" value="@query" placeholder="Buscar por número o cliente..." class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+    <input name="q" value="@query" placeholder="Buscar por número o cliente..." class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
     <button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">Buscar</button>
 </form>
 
@@ -44,7 +44,7 @@
             <tbody class="divide-y divide-slate-100">
                 @foreach (var sale in Model)
                 {
-                    <tr class="hover:bg-amber-50/40">
+                    <tr class="hover:bg-blue-50/40">
                         <td class="px-6 py-4 font-bold text-slate-900">@sale.SaleNumber</td>
                         <td class="px-6 py-4 text-slate-600">@sale.CustomerName</td>
                         <td class="px-6 py-4 text-slate-500">@sale.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
@@ -57,7 +57,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                                 Recibo PDF
                             </a>
-                            <a asp-action="Details" asp-route-id="@sale.Id" class="font-bold text-amber-600 hover:text-amber-500">Ver venta</a>
+                            <a asp-action="Details" asp-route-id="@sale.Id" class="font-bold text-blue-600 hover:text-blue-500">Ver venta</a>
                         </td>
                     </tr>
                 }

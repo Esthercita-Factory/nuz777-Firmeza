@@ -2,16 +2,229 @@
 @{
     ViewData["Title"] = "Ingresar";
 }
-<div class="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200 lg:grid-cols-2">
-    <div class="bg-slate-950 p-8 text-white sm:p-12"><a asp-controller="Home" asp-action="Index" class="flex items-center gap-3"><partial name="_Logo" model="@("h-10 w-10")" /><span class="text-sm font-black uppercase tracking-[0.25em] text-amber-400">Firmeza</span></a><h1 class="mt-16 text-4xl font-black tracking-tight">Tu operación,<br /><span class="text-amber-400">bajo control.</span></h1><p class="mt-5 leading-7 text-slate-400">Ingresa al panel administrativo para gestionar el negocio.</p></div>
-    <div class="p-8 sm:p-12"><h2 class="text-2xl font-black text-slate-950">Iniciar sesión</h2><p class="mt-2 text-sm text-slate-500">Solo los administradores pueden entrar a este panel.</p>
-        @if (TempData["Message"] is string message) { <div class="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">@message</div> }
-        <form asp-action="Login" method="post" class="mt-8 space-y-5"><div asp-validation-summary="ModelOnly" class="text-sm text-rose-600"></div><input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
-            <div><label asp-for="Email" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Email" placeholder="tu@correo.com" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 outline-none transition placeholder-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" autocomplete="email" /><span asp-validation-for="Email" class="text-xs text-rose-600"></span></div>
-            <div><label asp-for="Password" class="mb-2 block text-sm font-bold text-slate-700"></label><input asp-for="Password" placeholder="Ingresa tu contraseña" class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 outline-none transition placeholder-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" autocomplete="current-password" /><span asp-validation-for="Password" class="text-xs text-rose-600"></span></div>
-            <label class="flex items-center gap-2 text-sm text-slate-500"><input asp-for="RememberMe" class="h-4 w-4 rounded border-slate-300 text-amber-500" /> Recordarme</label>
-            <button class="w-full rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 transition hover:bg-amber-300" type="submit">Ingresar</button>
-        </form><p class="mt-6 text-center text-sm text-slate-500">¿Eres cliente? <a asp-action="Register" class="font-bold text-amber-600 hover:text-amber-500">Crea tu cuenta</a></p>
+
+<style>
+    /* Oculta el header/footer/nav del layout en esta vista */
+    header:not(#authRoot *),
+    footer:not(#authRoot *),
+    nav:not(#authRoot *) { display: none !important; }
+    html, body { overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+</style>
+
+<div id="authRoot" class="fixed inset-0 z-[9999] overflow-y-auto bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50">
+
+    <!-- Fondo empresarial -->
+    <div class="pointer-events-none fixed inset-0 opacity-[0.5]"
+         style="background-image: linear-gradient(rgba(148,163,184,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.18) 1px, transparent 1px); background-size: 40px 40px;"></div>
+    <div class="pointer-events-none fixed -left-24 -top-24 h-96 w-96 rounded-full bg-blue-300/30 blur-3xl"></div>
+    <div class="pointer-events-none fixed -bottom-32 -right-24 h-96 w-96 rounded-full bg-sky-300/30 blur-3xl"></div>
+
+    <svg class="pointer-events-none fixed inset-x-0 bottom-0 h-64 w-full select-none"
+         viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs>
+            <pattern id="ventanasLogin" width="14" height="18" patternUnits="userSpaceOnUse">
+                <rect x="3" y="4" width="6" height="8" fill="#ffffff" opacity=".75"/>
+            </pattern>
+            <g id="edificiosLogin">
+                <rect x="0"    y="140" width="90"  height="160"/>
+                <rect x="90"   y="100" width="70"  height="200"/>
+                <rect x="160"  y="170" width="100" height="130"/>
+                <rect x="260"  y="80"  width="80"  height="220"/>
+                <rect x="340"  y="150" width="110" height="150"/>
+                <rect x="450"  y="110" width="70"  height="190"/>
+                <rect x="520"  y="60"  width="90"  height="240"/>
+                <rect x="610"  y="140" width="100" height="160"/>
+                <rect x="710"  y="90"  width="80"  height="210"/>
+                <rect x="790"  y="160" width="110" height="140"/>
+                <rect x="900"  y="70"  width="80"  height="230"/>
+                <rect x="980"  y="130" width="100" height="170"/>
+                <rect x="1080" y="100" width="120" height="200"/>
+            </g>
+            <clipPath id="recorteLogin"><use href="#edificiosLogin"/></clipPath>
+        </defs>
+        <use href="#edificiosLogin" fill="#cbd5e1" opacity=".6"/>
+        <rect width="1200" height="300" fill="url(#ventanasLogin)" clip-path="url(#recorteLogin)" opacity=".6"/>
+        <g fill="#bfdbfe" opacity=".75">
+            <rect x="40"   y="200" width="100" height="100"/>
+            <rect x="140"  y="170" width="70"  height="130"/>
+            <rect x="230"  y="210" width="120" height="90"/>
+            <rect x="380"  y="180" width="80"  height="120"/>
+            <rect x="490"  y="220" width="110" height="80"/>
+            <rect x="640"  y="190" width="90"  height="110"/>
+            <rect x="760"  y="215" width="120" height="85"/>
+            <rect x="910"  y="185" width="80"  height="115"/>
+            <rect x="1020" y="210" width="110" height="90"/>
+        </g>
+    </svg>
+
+    <div class="relative z-10 flex min-h-full flex-col">
+
+        <!-- Botones para volver al inicio -->
+        <header class="flex items-center justify-between px-5 py-4 sm:px-8">
+            <a asp-controller="Home" asp-action="Index"
+               class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-blue-400 hover:text-blue-700">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="m15 18-6-6 6-6"/></svg>
+                Volver al inicio
+            </a>
+            <a asp-controller="Home" asp-action="Index"
+               class="inline-flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-slate-900 transition hover:bg-white/60">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-blue-500 text-white">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
+                </span>
+                <span class="text-base font-semibold tracking-tight">Firmeza</span>
+            </a>
+        </header>
+
+        <main class="flex flex-1 items-center justify-center px-4 pb-16 pt-2">
+            <div class="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl shadow-slate-300/50 backdrop-blur lg:grid-cols-[1fr_1.05fr]">
+
+                <!-- Panel de marca -->
+                <aside class="relative hidden flex-col justify-between overflow-hidden bg-slate-900 p-10 text-white lg:flex">
+                    <div class="pointer-events-none absolute inset-0 opacity-[0.07]"
+                         style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 36px 36px;"></div>
+                    <div class="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl"></div>
+                    <div class="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-sky-400/20 blur-3xl"></div>
+
+                    <div class="relative flex items-center gap-3">
+                        <span class="grid h-10 w-10 place-items-center rounded-lg bg-blue-500">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
+                        </span>
+                        <span class="text-lg font-semibold tracking-tight">Firmeza</span>
+                    </div>
+
+                    <div class="relative">
+                        <h2 class="text-3xl font-bold leading-tight tracking-tight">
+                            Gestión empresarial con <span class="text-sky-400">control y trazabilidad</span>
+                        </h2>
+                        <p class="mt-4 max-w-sm text-sm leading-6 text-slate-300">
+                            Inventario, clientes y ventas en una sola plataforma, con acceso por roles y registro de cada operación.
+                        </p>
+                        <ul class="mt-8 space-y-3 text-sm text-slate-200">
+                            <li class="flex items-center gap-3">
+                                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-500/20 text-sky-300">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                </span>
+                                Acceso segmentado por rol y permisos
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-500/20 text-sky-300">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                </span>
+                                Historial auditable de operaciones
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-500/20 text-sky-300">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                </span>
+                                Comunicación cifrada de extremo a extremo
+                            </li>
+                        </ul>
+                    </div>
+
+                    <p class="relative text-xs text-slate-400">&copy; @DateTime.Now.Year Firmeza. Todos los derechos reservados.</p>
+                </aside>
+
+                <!-- Formulario -->
+                <section class="flex flex-col justify-center px-7 py-10 sm:px-12">
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">Iniciar sesión</h1>
+                    <p class="mt-1.5 text-sm text-slate-500">Acceso restringido a personal autorizado.</p>
+
+                    <form asp-action="Login" method="post" id="loginForm" class="mt-8 space-y-5" novalidate>
+                        <div asp-validation-summary="ModelOnly" role="alert" aria-live="polite"
+                             class="rounded-lg border-rose-200 bg-rose-50 text-xs text-rose-700 empty:hidden [&:not(:empty)]:border [&:not(:empty)]:px-3 [&:not(:empty)]:py-2.5"></div>
+                        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                        <div>
+                            <label asp-for="Email" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600"></label>
+                            <div class="flex h-12 items-center overflow-hidden rounded-lg border border-slate-300 bg-white transition hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
+                                <span class="grid h-full w-12 shrink-0 place-items-center text-slate-400">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-[18px] w-[18px]" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                                </span>
+                                <input asp-for="Email" type="email" placeholder="nombre@empresa.com" autocomplete="email" autofocus
+                                       class="min-w-0 flex-1 border-0 bg-transparent pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400" />
+                            </div>
+                            <span asp-validation-for="Email" class="mt-1.5 block text-xs text-rose-600"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Password" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600"></label>
+                            <div class="flex h-12 items-center overflow-hidden rounded-lg border border-slate-300 bg-white transition hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
+                                <span class="grid h-full w-12 shrink-0 place-items-center text-slate-400">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-[18px] w-[18px]" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                                </span>
+                                <input asp-for="Password" type="password" placeholder="••••••••" autocomplete="current-password"
+                                       class="min-w-0 flex-1 border-0 bg-transparent pr-2 text-sm text-slate-900 outline-none placeholder:text-slate-300" />
+                                <button type="button" data-toggle-password="Password" aria-label="Mostrar u ocultar contraseña"
+                                        class="grid h-full w-12 shrink-0 place-items-center text-slate-400 transition hover:text-slate-700">
+                                    <svg data-eye-on viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-[18px] w-[18px]"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg data-eye-off viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden h-[18px] w-[18px]"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                                </button>
+                            </div>
+                            <p id="capsHint" class="mt-1.5 hidden items-center gap-1.5 text-xs text-amber-600">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M12 3 3 14h6v4h6v-4h6z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+                                Bloq Mayús está activado
+                            </p>
+                            <span asp-validation-for="Password" class="mt-1.5 block text-xs text-rose-600"></span>
+                        </div>
+
+                        <label class="flex cursor-pointer select-none items-center gap-2.5 text-sm text-slate-600">
+                            <input asp-for="RememberMe" class="h-4 w-4 rounded border-slate-300 accent-blue-600" />
+                            Mantener la sesión iniciada
+                        </label>
+
+                        <button type="submit" id="submitBtn"
+                                class="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 text-sm font-semibold tracking-wide text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:opacity-70">
+                            <svg data-spinner viewBox="0 0 24 24" fill="none" class="hidden h-4 w-4 animate-spin"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                            <span data-label>Ingresar</span>
+                        </button>
+                    </form>
+
+                    <div class="mt-6 flex items-center gap-2 rounded-lg bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+                        Conexión protegida con cifrado TLS 1.3
+                    </div>
+
+                    <p class="mt-6 text-center text-sm text-slate-500">
+                        ¿Eres cliente?
+                        <a asp-action="Register" class="font-semibold text-blue-600 hover:text-blue-700 hover:underline">Solicitar registro</a>
+                    </p>
+                </section>
+            </div>
+        </main>
     </div>
 </div>
 
+<script>
+    (function () {
+        var form = document.getElementById('loginForm');
+        var btn = document.getElementById('submitBtn');
+        var caps = document.getElementById('capsHint');
+
+        document.querySelectorAll('[data-toggle-password]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var input = document.getElementById(b.getAttribute('data-toggle-password'));
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                b.querySelector('[data-eye-on]').classList.toggle('hidden', show);
+                b.querySelector('[data-eye-off]').classList.toggle('hidden', !show);
+            });
+        });
+
+        var pwd = document.getElementById('Password');
+        ['keyup', 'keydown'].forEach(function (ev) {
+            pwd.addEventListener(ev, function (e) {
+                var on = e.getModifierState && e.getModifierState('CapsLock');
+                caps.classList.toggle('hidden', !on);
+                caps.classList.toggle('flex', !!on);
+            });
+        });
+        pwd.addEventListener('blur', function () { caps.classList.add('hidden'); caps.classList.remove('flex'); });
+
+        form.addEventListener('submit', function () {
+            if (window.jQuery && jQuery.fn.valid && !jQuery(form).valid()) return;
+            btn.disabled = true;
+            btn.querySelector('[data-spinner]').classList.remove('hidden');
+            btn.querySelector('[data-label]').textContent = 'Verificando…';
+        });
+    })();
+</script>
