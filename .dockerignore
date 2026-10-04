@@ -4,3 +4,8 @@
 .git/
 .vs/
 *.user
+
+# El bundle de Angular se genera en la imagen (stage frontend).
+# Si se copia el wwwroot local, el bundle viejo queda mergeado en /app/wwwroot.
+Firmeza.Web/wwwroot/
+client/dist/
