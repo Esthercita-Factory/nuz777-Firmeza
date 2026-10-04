@@ -1,8 +1,8 @@
 using Firmeza.Application.Abstractions;
 using Firmeza.Application.Common;
 using Firmeza.Application.Dtos.Sales;
-using Firmeza.Domain.Entities;
 using Firmeza.Domain.Enums;
+using Firmeza.Domain.Entities;
 using Firmeza.Domain.Errors;
 using Firmeza.Domain.Services;
 
@@ -209,4 +209,43 @@ public sealed class SaleService : ISaleService
                 detail.UnitPrice,
                 detail.Subtotal))
             .ToList());
+
+    public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        var sale = await _sales.FindByIdForUpdateAsync(id, cancellationToken);
+        if (sale is null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure(Error.EntityNotFound("Venta", id));
+        }
+
+        if (sale.Status == SaleStatus.Delivered)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure(Error.BusinessRule("No se puede borrar una venta que ya ha sido entregada."));
+        }
+
+        var productIds = sale.Details.Select(detail => detail.ProductId).Distinct().ToList();
+        if (productIds.Count > 0)
+        {
+            var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
+            var productsById = products.ToDictionary(product => product.Id);
+
+            foreach (var detail in sale.Details)
+            {
+                if (productsById.TryGetValue(detail.ProductId, out var product))
+                {
+                    product.Stock += detail.Quantity;
+                }
+            }
+        }
+
+        _sales.Remove(sale);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return Result.Success();
+    }
 }

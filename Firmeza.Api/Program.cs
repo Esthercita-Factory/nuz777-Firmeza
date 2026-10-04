@@ -69,11 +69,20 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
 {
     if (allowedOrigins.Length > 0)
     {
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        // Content-Disposition no es un header CORS seguro: sin exponerse, el cliente
+        // no puede leer el nombre real del archivo exportado (xlsx/pdf).
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition")
+            .AllowCredentials();
     }
     else
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition");
     }
 }));
 

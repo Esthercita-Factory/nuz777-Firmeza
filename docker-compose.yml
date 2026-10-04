@@ -35,6 +35,7 @@ services:
       Jwt__RefreshTokenDays: 7
       Database__MigrateOnStartup: "true"
       Swagger__Enabled: "true"
+      Cors__AllowedOrigins__0: http://localhost:8081
     ports:
       - "8080:8080"
 
@@ -44,18 +45,12 @@ services:
       context: .
       dockerfile: Dockerfile.web
     depends_on:
-      db:
-        condition: service_healthy
       api:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=firmeza;Username=postgres;Password=postgres
-      SeedAdmin__Email: admin@firmeza.local
-      SeedAdmin__Password: Admin123!
       Https__Enabled: "false"
-      Database__MigrateOnStartup: "false"
     ports:
       - "8081:8080"
 

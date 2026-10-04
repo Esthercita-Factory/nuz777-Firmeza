@@ -14,7 +14,12 @@ public interface ISaleRepository
 
     Task<Sale?> FindByNumberAsync(string saleNumber, CancellationToken cancellationToken = default);
 
+    /// <summary>Carga la venta con sus lineas para borrarla o actualizarla (tracking + FOR UPDATE).</summary>
+    Task<Sale?> FindByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Sale>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
 
     Task AddAsync(Sale sale, CancellationToken cancellationToken = default);
+
+    void Remove(Sale sale);
 }

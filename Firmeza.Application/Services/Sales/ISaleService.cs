@@ -12,4 +12,6 @@ public interface ISaleService
     Task<Result<SaleResponse>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<Result<SaleResponse>> CreateAsync(SaleRequest request, CancellationToken cancellationToken = default);
+
+    Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

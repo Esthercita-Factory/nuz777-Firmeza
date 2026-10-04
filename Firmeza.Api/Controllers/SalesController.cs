@@ -87,4 +87,27 @@ public sealed class SalesController : ControllerBase
         var bytes = await exportService.ExportSalesToPdfAsync(cancellationToken);
         return File(bytes, "application/pdf", $"ventas_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
     }
+
+    /// <summary>Borra una venta y restaura el stock de sus productos.</summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _sales.DeleteAsync(id, cancellationToken);
+        if (result.IsFailure)
+        {
+            if (result.Error.Code == ErrorCode.NotFound)
+            {
+                return NotFound(result);
+            }
+            if (result.Error.Code == ErrorCode.BusinessRule)
+            {
+                return Conflict(result.Error!.Message);
+            }
+            return Conflict(result);
+        }
+        return NoContent();
+    }
 }

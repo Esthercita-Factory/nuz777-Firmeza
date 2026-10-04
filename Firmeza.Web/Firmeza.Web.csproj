@@ -7,25 +7,12 @@
         <RootNamespace>Firmeza.Web</RootNamespace>
     </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="EPPlus" Version="8.7.1" />
-      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        <PrivateAssets>all</PrivateAssets>
-      </PackageReference>
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-      <PackageReference Include="QuestPDF" Version="2026.9.0" />
-    </ItemGroup>
+    <Target Name="BuildAngularClient" BeforeTargets="Build" Condition="'$(SkipFrontendBuild)' != 'true' AND Exists('$(MSBuildProjectDirectory)/../client/node_modules')">
+        <Exec Command="npm run build:publish" WorkingDirectory="$(MSBuildProjectDirectory)/../client" />
+    </Target>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Firmeza.Domain\Firmeza.Domain.csproj" />
-      <ProjectReference Include="..\Firmeza.Infrastructure\Firmeza.Infrastructure.csproj" />
-    </ItemGroup>
-
-    <Target Name="BuildFrontendAssets" BeforeTargets="Build" Condition="Exists('$(MSBuildProjectDirectory)/node_modules') AND '$(SkipFrontendBuild)' != 'true'">
-        <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Target Name="WarnMissingAngularClient" BeforeTargets="Build" Condition="'$(SkipFrontendBuild)' != 'true' AND !Exists('$(MSBuildProjectDirectory)/../client/node_modules')">
+        <Warning Text="client/node_modules no existe: el host se compila sin el cliente Angular. Ejecuta 'npm ci' en client/." />
     </Target>
 
 </Project>

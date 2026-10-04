@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Firmeza.Application.Common;
 
 namespace Firmeza.Application.Dtos.Products;
 
@@ -29,7 +30,7 @@ public sealed class ProductRequest
     public string Unit { get; set; } = "Unidad";
 
     [Display(Name = "Precio")]
-    [Range(typeof(decimal), "0.01", "999999999999.99", ErrorMessage = "El precio debe ser mayor que cero.")]
+    [DecimalRange("0.01", "999999999999.99", ErrorMessage = "El precio debe ser mayor que cero.")]
     public decimal Price { get; set; }
 
     [Display(Name = "Stock")]

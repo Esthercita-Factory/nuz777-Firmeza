@@ -51,6 +51,16 @@ public sealed class SaleRepository : ISaleRepository
     public Task<Sale?> FindByNumberAsync(string saleNumber, CancellationToken cancellationToken = default)
         => _db.Sales.FirstOrDefaultAsync(sale => sale.SaleNumber == saleNumber, cancellationToken);
 
+    public async Task<Sale?> FindByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var sale = await _db.Sales
+            .FromSqlInterpolated($"SELECT * FROM sales WHERE \"Id\" = {id} FOR UPDATE")
+            .Include(item => item.Details)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return sale;
+    }
+
     public async Task<IReadOnlyList<Sale>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
         => await _db.Sales
             .AsNoTracking()
@@ -63,5 +73,10 @@ public sealed class SaleRepository : ISaleRepository
     public async Task AddAsync(Sale sale, CancellationToken cancellationToken = default)
     {
         await _db.Sales.AddAsync(sale, cancellationToken);
+    }
+
+    public void Remove(Sale sale)
+    {
+        _db.Sales.Remove(sale);
     }
 }

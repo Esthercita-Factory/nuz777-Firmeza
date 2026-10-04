@@ -33,3 +33,6 @@ postgres-data/
 # OS files
 .DS_Store
 Thumbs.db
+client/dist/
+Firmeza.Web/wwwroot/*
+!Firmeza.Web/wwwroot/.gitkeep

@@ -202,4 +202,81 @@ public class SaleServiceTests
         Assert.Equal("Cemento", result.Value!.Lines.Single().ProductName);
         Assert.Equal("Ana Ruiz", result.Value.CustomerName);
     }
+
+    [Fact]
+    public async Task DeleteAsync_RestoresStockAndRemovesSale()
+    {
+        var product = Product(stock: 4);
+        var sale = PendingSale((product.Id, 3));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.DeleteAsync(sale.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(7, product.Stock);
+        _sales.Received(1).Remove(sale);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_SumsQuantitiesOfRepeatedProducts()
+    {
+        var product = Product(stock: 0);
+        var sale = PendingSale((product.Id, 2), (product.Id, 5));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.DeleteAsync(sale.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(7, product.Stock);
+        await _products.Received(1).FindByIdsForUpdateAsync(
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == product.Id),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RejectsDeliveredSale()
+    {
+        var product = Product(stock: 4);
+        var sale = PendingSale((product.Id, 3));
+        sale.Status = SaleStatus.Delivered;
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.DeleteAsync(sale.Id);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.Equal(4, product.Stock);
+        _sales.DidNotReceive().Remove(Arg.Any<Sale>());
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ReturnsNotFoundWhenSaleDoesNotExist()
+    {
+        _sales.FindByIdForUpdateAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Sale?)null);
+
+        var result = await _sut.DeleteAsync(Guid.NewGuid());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.NotFound, result.Error!.Code);
+        _sales.DidNotReceive().Remove(Arg.Any<Sale>());
+    }
+
+    private Sale PendingSale(params (Guid ProductId, int Quantity)[] lines)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            SaleNumber = "VTA-20260314-ABC123",
+            Customer = _customer,
+            Total = 30m,
+            Status = SaleStatus.Pending,
+            Details = lines
+                .Select(line => new SaleDetail { ProductId = line.ProductId, Quantity = line.Quantity })
+                .ToList()
+        };
 }

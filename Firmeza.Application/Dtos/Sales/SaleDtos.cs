@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Firmeza.Application.Common;
 using Firmeza.Domain.Enums;
 
 namespace Firmeza.Application.Dtos.Sales;
@@ -29,7 +30,7 @@ public sealed class SaleLineRequest
     public int Quantity { get; set; }
 
     [Display(Name = "Precio unitario")]
-    [Range(typeof(decimal), "0.01", "999999999999.99", ErrorMessage = "El precio unitario debe ser mayor que cero.")]
+    [DecimalRange("0.01", "999999999999.99", ErrorMessage = "El precio unitario debe ser mayor que cero.")]
     public decimal? UnitPrice { get; set; }
 }
 

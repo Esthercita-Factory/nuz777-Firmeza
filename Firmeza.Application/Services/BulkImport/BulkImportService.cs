@@ -67,13 +67,29 @@ public sealed class BulkImportService : IBulkImportService
                 continue; // Hoja vacía o solo con encabezado
             }
 
+            // Hojas de texto (instrucciones, ayuda) no son tablas de datos.
+            if (IsInformativeSheet(worksheet.Name))
+            {
+                continue;
+            }
+
             var sheetName = worksheet.Name;
             var startCol = worksheet.Dimension.Start.Column;
             var endCol = worksheet.Dimension.End.Column;
-            var startRow = worksheet.Dimension.Start.Row;
             var endRow = worksheet.Dimension.End.Row;
 
-            // 1. Leer encabezados
+            // 1. Localizar la fila de encabezados. Los archivos exportados por Firmeza agregan
+            //    un titulo y la fecha antes de las columnas, asi que no siempre es la fila 1.
+            var headerRow = FindHeaderRow(worksheet, startCol, endCol);
+            if (headerRow is null)
+            {
+                result.AddWarning(sheetName, worksheet.Dimension.Start.Row, "Encabezados", "No se detectaron columnas conocidas en esta hoja.");
+                continue;
+            }
+
+            var startRow = headerRow.Value;
+
+            // 2. Leer encabezados
             var headers = new List<(int ColumnIndex, string RawHeader, ImportTargetEntity Entity, string Field)>();
             var rawHeaderNames = new List<string>();
 
@@ -507,6 +523,59 @@ public sealed class BulkImportService : IBulkImportService
         return result;
     }
 
+    private static bool IsInformativeSheet(string sheetName)
+    {
+        var normalized = HeaderMatcher.Normalize(sheetName);
+
+        return normalized.Contains("instruccion")
+            || normalized.Contains("instrucciones")
+            || normalized.Contains("ayuda")
+            || normalized.Contains("help")
+            || normalized.Contains("readme")
+            || normalized.Contains("leeme");
+    }
+
+    /// <summary>
+    /// Devuelve la fila que contiene los encabezados reales: la primera con mayor cantidad
+    /// de columnas reconocidas. Permite importar los .xlsx exportados por Firmeza, que
+    /// traen titulo y fecha antes de la tabla.
+    /// </summary>
+    private static int? FindHeaderRow(ExcelWorksheet worksheet, int startCol, int endCol, int maxScanRows = 10)
+    {
+        var lastRow = worksheet.Dimension?.End.Row ?? 0;
+        var limit = Math.Min(lastRow, maxScanRows);
+
+        int? bestRow = null;
+        var bestScore = 0;
+
+        for (var row = 1; row <= limit; row++)
+        {
+            var names = new List<string>();
+            for (var col = startCol; col <= endCol; col++)
+            {
+                var value = worksheet.Cells[row, col].Value?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(value))
+                {
+                    names.Add(value);
+                }
+            }
+
+            if (names.Count == 0)
+            {
+                continue;
+            }
+
+            var score = names.Count(name => HeaderMatcher.Match(name, names).HasValue);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestRow = row;
+            }
+        }
+
+        return bestScore > 0 ? bestRow : null;
+    }
+
     public Task<byte[]> GenerateImportTemplateAsync()
     {
         using var package = new ExcelPackage();
@@ -514,16 +583,26 @@ public sealed class BulkImportService : IBulkImportService
         // Hoja 1: Datos Desnormalizados
         var ws = package.Workbook.Worksheets.Add("Datos_Desnormalizados");
 
+        // Misma forma que los .xlsx exportados por Firmeza: titulo, fecha y despues la tabla.
+        // El importador detecta la fila de encabezados automaticamente.
+        ws.Cells[1, 1].Value = "PLANTILLA DE CARGA MASIVA - FIRMEZA";
+        ws.Cells[1, 1].Style.Font.Bold = true;
+        ws.Cells[1, 1].Style.Font.Size = 14;
+
+        ws.Cells[2, 1].Value = $"Generado el: {_clock.UtcNow.ToLocalTime():dd/MM/yyyy HH:mm}";
+        ws.Cells[2, 1].Style.Font.Italic = true;
+        ws.Cells[2, 1].Style.Font.Size = 9;
+
         var headers = new[]
         {
-            "Documento_Cliente", "Nombre_Cliente", "Telefono", "Correo_Electronico", "Direccion", "Edad",
-            "Codigo_Producto", "Nombre_Producto", "Categoria", "Unidad", "Precio", "Stock",
-            "Cantidad_Vendida", "Numero_Factura", "Fecha_Venta"
+            "Codigo (SKU)", "Producto", "Categoria", "Unidad", "Precio", "Stock", "Descripcion",
+            "Documento", "Cliente", "Telefono", "Correo", "Direccion", "Edad",
+            "Cantidad", "Factura", "Fecha"
         };
 
         for (var i = 0; i < headers.Length; i++)
         {
-            var cell = ws.Cells[1, i + 1];
+            var cell = ws.Cells[4, i + 1];
             cell.Value = headers[i];
             cell.Style.Font.Bold = true;
             cell.Style.Font.Color.SetColor(System.Drawing.Color.White);
@@ -534,17 +613,17 @@ public sealed class BulkImportService : IBulkImportService
 
         var sampleData = new object[][]
         {
-            new object[] { "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35, "CEM-001", "Cemento Gris Tipo UG 50kg", "Cementos", "Bulto", 32500m, 150, 10, "FAC-2026-001", "2026-10-02" },
-            new object[] { "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35, "VAR-002", "Varilla Corrugada 1/2 pulgada", "Acero", "Varilla", 28000m, 300, 20, "FAC-2026-001", "2026-10-02" },
-            new object[] { "9876543210", "Arq. María Paula Rincón", "3159876543", "maria.rincon@estudio.co", "Calle 127 #14-30", 29, "ARE-003", "Arena Lavada de Río m3", "Agregados", "Metro cúbico", 65000m, 40, 3, "FAC-2026-002", "2026-10-02" },
-            new object[] { "7984561230", "Ferretería El Triunfo", "3001234567", "eltriunfo@ferre.com", "Carrera 15 #45-10", 48, "LAD-004", "Ladrillo Estructurado 6 Huecos", "Mampostería", "Unidad", 1450m, 5000, 0, "", "" }
+            new object[] { "CEM-001", "Cemento Gris Tipo UG 50kg", "Cementos", "Bulto", 32500m, 150m, "Cemento uso general", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 10m, "FAC-2026-001", "2026-10-02" },
+            new object[] { "VAR-002", "Varilla Corrugada 1/2 pulgada", "Acero", "Varilla", 28000m, 300m, "Acero de refuerzo", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 20m, "FAC-2026-001", "2026-10-02" },
+            new object[] { "ARE-003", "Arena Lavada de Rio m3", "Agregados", "Metro cubico", 65000m, 40m, "Arena de rio lavada", "9876543210", "Arq. Maria Paula Rincon", "3159876543", "maria.rincon@estudio.co", "Calle 127 #14-30", 29m, 3m, "FAC-2026-002", "2026-10-02" },
+            new object[] { "LAD-004", "Ladrillo Estructurado 6 Huecos", "Mamposteria", "Unidad", 1450m, 5000m, "Ladrillo para mamposteria", "7984561230", "Ferreteria El Triunfo", "3001234567", "eltriunfo@ferre.com", "Carrera 15 #45-10", 48m, null, "", "" }
         };
 
         for (var r = 0; r < sampleData.Length; r++)
         {
             for (var c = 0; c < sampleData[r].Length; c++)
             {
-                var cell = ws.Cells[r + 2, c + 1];
+                var cell = ws.Cells[r + 5, c + 1];
                 cell.Value = sampleData[r][c];
 
                 if (sampleData[r][c] is decimal)
