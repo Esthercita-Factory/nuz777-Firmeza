@@ -1,0 +1,168 @@
+@import 'tailwindcss';
+
+@source './app/**/*.ts';
+@source './index.html';
+
+/* overflow-x: hidden crea un contenedor de scroll y rompe position: sticky.
+   clip recorta sin crear ese contenedor. */
+body {
+  overflow-x: clip;
+}
+
+app-root,
+app-shell,
+app-home,
+app-login,
+app-register {
+  display: block;
+}
+
+@keyframes firmeza-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-60px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Cada cambio de ruta inserta un elemento nuevo: la animacion se repite en cada navegacion. */
+app-shell main > * {
+  animation: firmeza-page-in 300ms ease-out both;
+}
+
+html {
+  font-size: 15px;
+}
+
+.toast-enter {
+  animation: firmeza-toast-in 220ms ease-out both;
+}
+
+@keyframes firmeza-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fondos decorativos de las pantallas públicas */
+.auth-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Tarjetas de autenticacion */
+.auth-card {
+  animation: firmeza-auth-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.auth-card-badge {
+  display: inline-flex;
+  animation: firmeza-auth-badge 520ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+@keyframes firmeza-auth-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes firmeza-auth-badge {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* Login corporativo */
+@keyframes firmeza-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes firmeza-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes firmeza-blob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -22px, 0) scale(1.08);
+  }
+}
+
+.animate-rise {
+  animation: firmeza-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-rise-1 { animation-delay: 60ms; }
+.animate-rise-2 { animation-delay: 140ms; }
+.animate-rise-3 { animation-delay: 220ms; }
+.animate-rise-4 { animation-delay: 300ms; }
+.animate-rise-5 { animation-delay: 380ms; }
+
+.animate-shake {
+  animation: firmeza-shake 420ms ease-in-out both;
+}
+
+.auth-blob {
+  animation: firmeza-blob 14s ease-in-out infinite;
+}

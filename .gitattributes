@@ -1,0 +1,2 @@
+# GitHub Linguist: los scripts de migracion de EF Core son PL/pgSQL (bloques DO).
+*.sql linguist-language=PLpgSQL
