@@ -1,13 +1,15 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '../Shared/Icon.Component';
 import { toApiError } from '../../Services/Api.Service';
+import { ConfirmService } from '../../Services/confirm.service';
 import { Customer, CustomersService } from '../../Services/customers.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 
 @Component({
   selector: 'app-customers',
-  imports: [FormsModule, RouterLink],
+  imports: [IconComponent, FormsModule, RouterLink],
   template: `
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -82,9 +84,31 @@ import { ImportsService, ToastService } from '../../Services/imports.service';
                     {{ customer.isActive ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-right">
-                  <a [routerLink]="['/clientes', customer.id, 'editar']" class="font-bold text-blue-600 hover:text-blue-500">Editar</a>
-                  <button type="button" class="ml-3 font-bold text-rose-500 hover:text-rose-700" (click)="remove(customer)">Eliminar</button>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-end gap-1">
+                    <a
+                      [routerLink]="['/clientes', customer.id]"
+                      title="Ver cliente"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-600"
+                    >
+                      <app-icon name="eye" [size]="16" label="Ver cliente" />
+                    </a>
+                    <a
+                      [routerLink]="['/clientes', customer.id, 'editar']"
+                      title="Editar cliente"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-sky-50 hover:text-sky-600"
+                    >
+                      <app-icon name="pencil" [size]="16" label="Editar cliente" />
+                    </a>
+                    <button
+                      type="button"
+                      title="Eliminar cliente"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      (click)="remove(customer)"
+                    >
+                      <app-icon name="trash" [size]="16" label="Eliminar cliente" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -116,6 +140,7 @@ export class CustomersComponent implements OnInit {
   private readonly customersService = inject(CustomersService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
 
   protected readonly customers = signal<Customer[]>([]);
   protected queryText = '';
@@ -144,8 +169,12 @@ export class CustomersComponent implements OnInit {
     this.load();
   }
 
-  protected remove(customer: Customer): void {
-    if (!confirm(`¿Eliminar el cliente ${customer.fullName}?`)) return;
+  protected async remove(customer: Customer): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar cliente',
+      message: `¿Eliminar a ${customer.fullName}? Esta accion no se puede deshacer.`
+    });
+    if (!confirmed) return;
 
     this.customersService.delete(customer.id).subscribe({
       next: () => {

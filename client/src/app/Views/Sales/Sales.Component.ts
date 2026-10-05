@@ -2,13 +2,15 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '../Shared/Icon.Component';
 import { toApiError } from '../../Services/Api.Service';
+import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { SaleStatus, SaleSummary, SalesService } from '../../Services/sales.service';
 
 @Component({
   selector: 'app-sales',
-  imports: [FormsModule, RouterLink, CurrencyPipe, DatePipe],
+  imports: [IconComponent, FormsModule, RouterLink, CurrencyPipe, DatePipe],
   template: `
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -133,6 +135,7 @@ export class SalesComponent implements OnInit {
   protected readonly salesService = inject(SalesService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
 
   protected readonly statusOptions: { value: SaleStatus; label: string }[] = [
     { value: 'Pending', label: 'Pendiente' },
@@ -172,11 +175,17 @@ export class SalesComponent implements OnInit {
     return sale.status !== 'Delivered';
   }
 
-  protected remove(sale: SaleSummary): void {
-    const warning = sale.status === 'Delivered'
-      ? 'La venta ya fue entregada y no se puede eliminar.'
-      : `¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolverá el stock de sus productos.`;
-    if (!confirm(warning)) return;
+  protected async remove(sale: SaleSummary): Promise<void> {
+    if (sale.status === 'Delivered') {
+      this.toastService.error('La venta ya fue entregada y no se puede eliminar.');
+      return;
+    }
+
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar venta',
+      message: `¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolvera el stock de sus productos y esta accion no se puede deshacer.`
+    });
+    if (!confirmed) return;
 
     this.salesService.delete(sale.id).subscribe({
       next: () => {

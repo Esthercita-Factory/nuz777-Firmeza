@@ -100,6 +100,7 @@ const IVA_RATE = 0.19;
                       <select
                         class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-400"
                         [ngModel]="line.productId"
+                        [ngModelOptions]="{ standalone: true }"
                         (ngModelChange)="onProductChange(line, $event)"
                       >
                         <option [ngValue]="''">-- Elegir producto --</option>
@@ -115,6 +116,7 @@ const IVA_RATE = 0.19;
                         min="1"
                         class="w-20 rounded-lg border border-slate-300 px-2.5 py-1.5 text-center text-xs outline-none focus:border-blue-400"
                         [ngModel]="line.quantity"
+                        [ngModelOptions]="{ standalone: true }"
                         (ngModelChange)="onQuantityChange(line, $event)"
                       />
                     </td>
@@ -125,6 +127,7 @@ const IVA_RATE = 0.19;
                         min="0"
                         class="w-28 rounded-lg border border-slate-300 px-2.5 py-1.5 text-right text-xs outline-none focus:border-blue-400"
                         [ngModel]="line.unitPrice"
+                        [ngModelOptions]="{ standalone: true }"
                         (ngModelChange)="onPriceChange(line, $event)"
                       />
                     </td>

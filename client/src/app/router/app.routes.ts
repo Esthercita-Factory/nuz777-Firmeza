@@ -6,8 +6,10 @@ import { ShellComponent } from '../Views/Layout/Shell.Component';
 import { DashboardComponent } from '../Views/Dashboard/Dashboard.Component';
 import { ProductsComponent } from '../Views/Products/Products.Component';
 import { ProductFormComponent } from '../Views/Products/ProductForm.Component';
+import { ProductDetailComponent } from '../Views/Products/ProductDetail.Component';
 import { CustomersComponent } from '../Views/Customers/Customers.Component';
 import { CustomerFormComponent } from '../Views/Customers/CustomerForm.Component';
+import { CustomerDetailComponent } from '../Views/Customers/CustomerDetail.Component';
 import { SalesComponent } from '../Views/Sales/Sales.Component';
 import { SaleFormComponent } from '../Views/Sales/SaleForm.Component';
 import { SaleDetailComponent } from '../Views/Sales/SaleDetail.Component';
@@ -27,10 +29,14 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
       { path: 'productos', component: ProductsComponent },
+      // El orden importa: 'nuevo' debe declararse antes que ':id' para que
+      // Angular no interprete /productos/nuevo como un id.
       { path: 'productos/nuevo', component: ProductFormComponent },
+      { path: 'productos/:id', component: ProductDetailComponent },
       { path: 'productos/:id/editar', component: ProductFormComponent },
       { path: 'clientes', component: CustomersComponent },
       { path: 'clientes/nuevo', component: CustomerFormComponent },
+      { path: 'clientes/:id', component: CustomerDetailComponent },
       { path: 'clientes/:id/editar', component: CustomerFormComponent },
       { path: 'ventas', component: SalesComponent },
       { path: 'ventas/nueva', component: SaleFormComponent },

@@ -2,12 +2,14 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
+import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { Sale, SalesService } from '../../Services/sales.service';
+import { IconComponent } from '../Shared/Icon.Component';
 
 @Component({
   selector: 'app-sale-detail',
-  imports: [RouterLink, CurrencyPipe, DatePipe],
+  imports: [IconComponent, RouterLink, CurrencyPipe, DatePipe],
   template: `
     <div class="mx-auto max-w-4xl">
       @if (errorMessage(); as message) {
@@ -123,6 +125,7 @@ export class SaleDetailComponent implements OnInit {
   protected readonly salesService = inject(SalesService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
@@ -149,8 +152,12 @@ export class SaleDetailComponent implements OnInit {
     });
   }
 
-  protected remove(sale: Sale): void {
-    if (!confirm(`¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolverá el stock de sus productos.`)) return;
+  protected async remove(sale: Sale): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar venta',
+      message: `¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolvera el stock de sus productos y esta accion no se puede deshacer.`
+    });
+    if (!confirmed) return;
 
     this.salesService.delete(sale.id).subscribe({
       next: () => {

@@ -1,6 +1,13 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../Services/auth.service';
+
+interface NavItem {
+  path: string;
+  label: string;
+  /** Path data (atributo d) de un icono de 24x24 trazo, estilo Feather/Lucide. */
+  icon: string;
+}
 
 @Component({
   selector: 'app-logo',
@@ -41,7 +48,9 @@ export class LogoComponent {
                 routerLinkActive="bg-white/70 text-slate-950"
                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition hover:bg-white/70 hover:text-slate-950"
               >
-                <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" [attr.d]="item.icon"></svg>
+                <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path [attr.d]="item.icon" />
+                </svg>
                 {{ item.label }}
               </a>
             }
@@ -87,9 +96,8 @@ export class LogoComponent {
 
             <div class="hidden items-center gap-2.5 lg:flex">
               <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <path d="M3 7v6a2 2 0 0 0 2 2h2l4 4v-4h4a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z" />
-                  <path d="M22 11a2 2 0 0 1-2 2h-1v4l-4-4h-.1" />
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="h-5 w-5">
+                  <path [attr.d]="currentNav()?.icon ?? navItems[0].icon" />
                 </svg>
               </span>
               <span class="max-w-[240px] truncate text-sm font-black uppercase tracking-widest text-slate-700">{{ pageTitle() }}</span>
@@ -127,26 +135,26 @@ export class ShellComponent {
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  protected readonly navItems = [
+  protected readonly navItems: NavItem[] = [
     {
       path: '/dashboard',
       label: 'Inicio',
-      icon: 'M3 7v6a2 2 0 0 0 2 2h2l4 4v-4h4a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z'
+      icon: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z'
     },
     {
       path: '/productos',
       label: 'Productos',
-      icon: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z'
+      icon: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0'
     },
     {
       path: '/clientes',
       label: 'Clientes',
-      icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8'
+      icon: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8'
     },
     {
       path: '/ventas',
       label: 'Ventas',
-      icon: 'M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM2 10h20'
+      icon: 'M2 3h2l2.4 11.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2M18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2'
     },
     {
       path: '/carga-masiva',
@@ -156,16 +164,17 @@ export class ShellComponent {
   ];
 
   protected readonly sidebarOpen = signal(localStorage.getItem('firmeza-sidebar-open') === 'true');
-  protected readonly pageTitle = signal('Panel');
+  protected readonly currentNav = signal<NavItem | null>(null);
+  protected readonly pageTitle = computed(() => this.currentNav()?.label ?? 'Panel');
 
   constructor() {
-    this.router.events.subscribe(() => this.pageTitle.set(this.titleFor(this.router.url)));
-    this.pageTitle.set(this.titleFor(this.router.url));
+    this.router.events.subscribe(() => this.currentNav.set(this.navFor(this.router.url)));
+    this.currentNav.set(this.navFor(this.router.url));
   }
 
-  private titleFor(url: string): string {
+  private navFor(url: string): NavItem | null {
     const path = url.split('?')[0];
-    return this.navItems.find((item) => path.startsWith(item.path))?.label ?? 'Panel';
+    return this.navItems.find((item) => path.startsWith(item.path)) ?? null;
   }
 
   protected toggleSidebar(): void {

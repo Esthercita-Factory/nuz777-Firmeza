@@ -2,13 +2,15 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '../Shared/Icon.Component';
 import { toApiError } from '../../Services/Api.Service';
+import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { Product, ProductsService } from '../../Services/products.service';
 
 @Component({
   selector: 'app-products',
-  imports: [FormsModule, RouterLink, CurrencyPipe],
+  imports: [IconComponent, FormsModule, RouterLink, CurrencyPipe],
   template: `
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -87,9 +89,31 @@ import { Product, ProductsService } from '../../Services/products.service';
                     {{ product.isActive ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-right">
-                  <a [routerLink]="['/productos', product.id, 'editar']" class="font-bold text-blue-600 hover:text-blue-500">Editar</a>
-                  <button type="button" class="ml-3 font-bold text-rose-500 hover:text-rose-700" (click)="remove(product)">Eliminar</button>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-end gap-1">
+                    <a
+                      [routerLink]="['/productos', product.id]"
+                      title="Ver producto"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <app-icon name="eye" [size]="16" label="Ver producto" />
+                    </a>
+                    <a
+                      [routerLink]="['/productos', product.id, 'editar']"
+                      title="Editar producto"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <app-icon name="pencil" [size]="16" label="Editar producto" />
+                    </a>
+                    <button
+                      type="button"
+                      title="Eliminar producto"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      (click)="remove(product)"
+                    >
+                      <app-icon name="trash" [size]="16" label="Eliminar producto" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -121,6 +145,7 @@ export class ProductsComponent implements OnInit {
   private readonly productsService = inject(ProductsService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
 
   protected readonly products = signal<Product[]>([]);
   protected queryText = '';
@@ -149,8 +174,12 @@ export class ProductsComponent implements OnInit {
     this.load();
   }
 
-  protected remove(product: Product): void {
-    if (!confirm(`¿Eliminar el producto ${product.sku} · ${product.name}?`)) return;
+  protected async remove(product: Product): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar producto',
+      message: `¿Eliminar ${product.sku} · ${product.name}? Esta accion no se puede deshacer.`
+    });
+    if (!confirmed) return;
 
     this.productsService.delete(product.id).subscribe({
       next: () => {
