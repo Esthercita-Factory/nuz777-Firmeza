@@ -204,6 +204,48 @@ public class SaleServiceTests
     }
 
     [Fact]
+    public async Task GetByIdAsync_ReturnsTaxesThatAddUpToTheTotal()
+    {
+        var sale = new Sale
+        {
+            Id = Guid.NewGuid(),
+            SaleNumber = "VTA-20260314-ABC123",
+            Customer = _customer,
+            Total = 325000m,
+            Status = SaleStatus.Confirmed,
+            Details = []
+        };
+        _sales.FindWithDetailsAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        var result = await _sut.GetByIdAsync(sale.Id);
+
+        Assert.True(result.IsSuccess);
+        var taxes = result.Value!.Taxes;
+        Assert.Equal(0.19m, taxes.Rate);
+        // El panel ya no recalcula: base + IVA tiene que cuadrar con el total.
+        Assert.Equal(sale.Total, taxes.SubtotalBase + taxes.Tax);
+        Assert.Equal(325000m, taxes.SubtotalBase + taxes.Tax);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ReturnsTaxesInTheResponse()
+    {
+        var product = Product(stock: 10, price: 32500m);
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.CreateAsync(new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 10 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(325000m, result.Value!.Total);
+        Assert.Equal(result.Value.Total, result.Value.Taxes.SubtotalBase + result.Value.Taxes.Tax);
+    }
+
+    [Fact]
     public async Task DeleteAsync_RestoresStockAndRemovesSale()
     {
         var product = Product(stock: 4);

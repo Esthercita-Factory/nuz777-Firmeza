@@ -1,6 +1,48 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ConfirmService } from './confirm.service';
+import { SalesService } from './sales.service';
 import { ConfirmDialogComponent } from '../Views/Shared/ConfirmDialog.Component';
+
+describe('SalesService.splitTaxInclusive', () => {
+  // splitTaxInclusive es pura, pero la clase se construye con inject(), asi que
+  // necesita un contexto de inyeccion.
+  let service: SalesService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    service = TestBed.inject(SalesService);
+  });
+
+  it('parte un total exacto', () => {
+    const taxes = service.splitTaxInclusive(119);
+
+    expect(taxes.subtotalBase).toBe(100);
+    expect(taxes.tax).toBe(19);
+    expect(taxes.rate).toBe(0.19);
+  });
+
+  it('base mas IVA siempre cuadra con el total', () => {
+    // Mismo criterio que InventoryCalculatorTaxTests del lado del dominio.
+    for (const total of [1, 7, 32500, 885000, 195000, 10150.55, 0.01, 99999.99]) {
+      const taxes = service.splitTaxInclusive(total);
+      expect(Number((taxes.subtotalBase + taxes.tax).toFixed(2))).toBe(total);
+    }
+  });
+
+  it('redondea la base igual que el dominio', () => {
+    // 325000 / 1.19 = 273109.2436... -> 273109.24
+    const taxes = service.splitTaxInclusive(325000);
+
+    expect(taxes.subtotalBase).toBe(273109.24);
+    expect(taxes.tax).toBe(51890.76);
+  });
+
+  it('total cero queda en cero', () => {
+    expect(service.splitTaxInclusive(0)).toEqual({ subtotalBase: 0, tax: 0, rate: 0.19 });
+  });
+});
 
 describe('ConfirmService', () => {
   let service: ConfirmService;
