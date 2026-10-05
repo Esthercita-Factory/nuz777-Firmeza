@@ -6,7 +6,7 @@ import { toApiError } from '../../Services/Api.Service';
 import { Customer, CustomersService } from '../../Services/customers.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { Product, ProductsService } from '../../Services/products.service';
-import { SaleLineRequest, SaleStatus, SalesService } from '../../Services/sales.service';
+import { SaleLineRequest, SaleStatus, SalesService, TAX_RATE } from '../../Services/sales.service';
 
 interface SaleLineDraft {
   key: number;
@@ -14,8 +14,6 @@ interface SaleLineDraft {
   quantity: number;
   unitPrice: number;
 }
-
-const IVA_RATE = 0.19;
 
 @Component({
   selector: 'app-sale-form',
@@ -164,7 +162,7 @@ const IVA_RATE = 0.19;
                 <span class="font-bold text-slate-900">{{ subtotalBase() | currency: 'COP' }}</span>
               </div>
               <div class="flex justify-between text-slate-600">
-                <span>IVA (19% inc.):</span>
+                <span>IVA ({{ (TAX_RATE * 100).toFixed(0) }}% inc.):</span>
                 <span class="font-bold text-slate-900">{{ iva() | currency: 'COP' }}</span>
               </div>
               <div class="flex justify-between border-t border-slate-200 pt-2 text-base font-black text-slate-950">
@@ -200,6 +198,8 @@ export class SaleFormComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
+  protected readonly TAX_RATE = TAX_RATE;
+
   protected readonly statusOptions: { value: SaleStatus; label: string }[] = [
     { value: 'Pending', label: 'Pendiente' },
     { value: 'Confirmed', label: 'Confirmada' },
@@ -227,8 +227,11 @@ export class SaleFormComponent implements OnInit {
   private nextKey = 1;
 
   protected readonly total = computed(() => this.lines().reduce((sum, line) => sum + line.quantity * line.unitPrice, 0));
-  protected readonly subtotalBase = computed(() => this.total() / (1 + IVA_RATE));
-  protected readonly iva = computed(() => this.total() - this.subtotalBase());
+  // Preview mientras se arma la venta: mismo redondeo que el dominio, para que
+  // lo que se ve antes de guardar sea exactamente lo que se guarda despues.
+  protected readonly taxes = computed(() => this.salesService.splitTaxInclusive(this.total()));
+  protected readonly subtotalBase = computed(() => this.taxes().subtotalBase);
+  protected readonly iva = computed(() => this.taxes().tax);
 
   ngOnInit(): void {
     this.customersService.activeOptions().subscribe({

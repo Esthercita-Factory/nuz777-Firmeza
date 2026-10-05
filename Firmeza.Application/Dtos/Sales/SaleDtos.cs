@@ -53,6 +53,13 @@ public sealed record SaleLineResponse(
     decimal UnitPrice,
     decimal Subtotal);
 
+/// <summary>
+/// Base e IVA de la venta. Los precios son con IVA incluido, asi que ambos se
+/// derivan del total en el dominio y llegan calculados: el cliente no los
+/// recalcula y el panel coincide con el comprobante PDF.
+/// </summary>
+public sealed record SaleTaxesResponse(decimal SubtotalBase, decimal Tax, decimal Rate);
+
 public sealed record SaleResponse(
     Guid Id,
     string SaleNumber,
@@ -62,6 +69,7 @@ public sealed record SaleResponse(
     DateTimeOffset SaleDate,
     SaleStatus Status,
     decimal Total,
+    SaleTaxesResponse Taxes,
     string? CreatedByUserId,
     IReadOnlyList<SaleLineResponse> Lines);
 
@@ -73,5 +81,13 @@ public sealed record SaleQuery
 
     public int Page { get; init; } = 1;
 
-    public int PageSize { get; init; } = 20;
+    // 10 por pagina: con 11 registros ya se ve la paginacion.
+    public int PageSize { get; init; } = 10;
+
+    /// <summary>
+    /// Lo fija el servidor segun el rol: el Administrador ve todas las ventas
+    /// (null), el Cliente solo las propias. No se toma del cuerpo de la peticion,
+    /// para que un cliente no pueda pedir las ventas de otro.
+    /// </summary>
+    public Guid? CustomerId { get; init; }
 }

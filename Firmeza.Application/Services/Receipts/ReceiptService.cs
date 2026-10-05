@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Firmeza.Application.Abstractions;
 using Firmeza.Domain.Entities;
 using Firmeza.Domain.Enums;
+using Firmeza.Domain.Services;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -27,8 +28,11 @@ public sealed class ReceiptService : IReceiptService
 
     public byte[] GenerateReceiptPdf(Sale sale)
     {
-        var subtotalBase = Math.Round(sale.Total / 1.19m, 2);
-        var iva = sale.Total - subtotalBase;
+        // La base y el IVA los calcula el dominio para que el comprobante
+        // coincida exactamente con lo que muestra el panel.
+        var taxes = InventoryCalculator.SplitTaxInclusive(sale.Total);
+        var subtotalBase = taxes.SubtotalBase;
+        var iva = taxes.Tax;
         var culture = new CultureInfo("es-CO");
 
         var doc = Document.Create(container =>
@@ -225,7 +229,7 @@ public sealed class ReceiptService : IReceiptService
 
                     totals.Item().PaddingTop(3).Row(r =>
                     {
-                        r.RelativeItem().Text("IVA (19%):").FontSize(9).FontColor("#475569");
+                        r.RelativeItem().Text($"IVA ({InventoryCalculator.TaxRate:P0}):").FontSize(9).FontColor("#475569");
                         r.RelativeItem().AlignRight().Text(iva.ToString("C2", culture)).FontSize(9).Bold().FontColor("#334155");
                     });
 

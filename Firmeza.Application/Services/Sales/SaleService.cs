@@ -36,7 +36,7 @@ public sealed class SaleService : ISaleService
     public async Task<Result<PagedResponse<SaleSummaryResponse>>> ListAsync(SaleQuery query, CancellationToken cancellationToken = default)
     {
         var page = new PageRequest { Page = query.Page, PageSize = query.PageSize };
-        var result = await _sales.ListAsync(new SaleFilter(query.Q?.Trim(), query.Status), page, cancellationToken);
+        var result = await _sales.ListAsync(new SaleFilter(query.Q?.Trim(), query.Status, query.CustomerId), page, cancellationToken);
 
         return Result.Success(new PagedResponse<SaleSummaryResponse>
         {
@@ -146,6 +146,8 @@ public sealed class SaleService : ISaleService
             return Result.Failure<SaleResponse>(Error.Conflict(exception.Message));
         }
 
+        var taxes = InventoryCalculator.SplitTaxInclusive(sale.Total);
+
         return Result.Success(new SaleResponse(
             sale.Id,
             sale.SaleNumber,
@@ -155,6 +157,7 @@ public sealed class SaleService : ISaleService
             sale.SaleDate,
             sale.Status,
             sale.Total,
+            new SaleTaxesResponse(taxes.SubtotalBase, taxes.Tax, InventoryCalculator.TaxRate),
             sale.CreatedByUserId,
             details.Select(detail => new SaleLineResponse(
                 Guid.Empty,
@@ -189,6 +192,12 @@ public sealed class SaleService : ISaleService
         sale.Total,
         sale.Details.Count);
 
+    private static SaleTaxesResponse ToTaxes(Sale sale)
+    {
+        var taxes = InventoryCalculator.SplitTaxInclusive(sale.Total);
+        return new SaleTaxesResponse(taxes.SubtotalBase, taxes.Tax, InventoryCalculator.TaxRate);
+    }
+
     private static SaleResponse ToResponse(Sale sale) => new(
         sale.Id,
         sale.SaleNumber,
@@ -198,6 +207,7 @@ public sealed class SaleService : ISaleService
         sale.SaleDate,
         sale.Status,
         sale.Total,
+        ToTaxes(sale),
         sale.CreatedByUserId,
         sale.Details
             .Select(detail => new SaleLineResponse(

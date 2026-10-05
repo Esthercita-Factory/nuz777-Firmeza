@@ -6,6 +6,9 @@ import { PagedResponse } from './products.service';
 
 export type SaleStatus = 'Pending' | 'Confirmed' | 'Delivered' | 'Cancelled';
 
+/** Tasa de IVA vigente. Debe coincidir con InventoryCalculator.TaxRate del dominio. */
+export const TAX_RATE = 0.19;
+
 export interface SaleSummary {
   id: string;
   saleNumber: string;
@@ -27,6 +30,15 @@ export interface SaleLine {
   subtotal: number;
 }
 
+export interface SaleTaxes {
+  /** Base sin impuesto, derivada del total. */
+  subtotalBase: number;
+  /** IVA incluido en el total. */
+  tax: number;
+  /** Tasa aplicada, por ejemplo 0.19. */
+  rate: number;
+}
+
 export interface Sale {
   id: string;
   saleNumber: string;
@@ -36,6 +48,8 @@ export interface Sale {
   saleDate: string;
   status: SaleStatus;
   total: number;
+  /** Base e IVA ya calculados por la API. No se recalculan en el cliente. */
+  taxes: SaleTaxes;
   createdByUserId: string | null;
   lines: SaleLine[];
 }
@@ -102,6 +116,20 @@ export class SalesService {
 
   exportPdfUrl(): string {
     return `${this.baseUrl}/export/pdf`;
+  }
+
+  /**
+   * Separa un total con IVA incluido en base e impuesto, con el mismo redondeo
+   * que usa InventoryCalculator en el dominio (AwayFromZero a 2 decimales).
+   * Solo para el preview del formulario: una vez guardada, la venta trae la
+   * base y el IVA calculados por la API en `taxes`.
+   */
+  splitTaxInclusive(total: number): SaleTaxes {
+    const scale = 100;
+    const rounded = (value: number) => Math.round(Math.abs(value) * scale + Number.EPSILON) / scale * Math.sign(value);
+    const subtotalBase = rounded(total / (1 + TAX_RATE));
+
+    return { subtotalBase, tax: rounded(total - subtotalBase), rate: TAX_RATE };
   }
 
   statusLabel(status: SaleStatus): string {

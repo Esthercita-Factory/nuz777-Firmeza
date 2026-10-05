@@ -116,7 +116,9 @@ import { IconComponent } from '../Shared/Icon.Component';
                   <td class="px-6 py-3 text-right text-sm font-bold text-slate-700">{{ subtotalBase() | currency: 'COP' }}</td>
                 </tr>
                 <tr>
-                  <td colspan="4" class="px-6 py-3 text-right text-xs font-semibold text-slate-500">IVA (19%):</td>
+                  <td colspan="4" class="px-6 py-3 text-right text-xs font-semibold text-slate-500">
+                    IVA ({{ (current.taxes.rate * 100).toFixed(0) }}%):
+                  </td>
                   <td class="px-6 py-3 text-right text-sm font-bold text-slate-700">{{ iva() | currency: 'COP' }}</td>
                 </tr>
                 <tr class="border-t border-slate-200">
@@ -144,8 +146,9 @@ export class SaleDetailComponent implements OnInit {
   protected readonly sale = signal<Sale | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
-  protected readonly subtotalBase = computed(() => (this.sale()?.total ?? 0) / 1.19);
-  protected readonly iva = computed(() => (this.sale()?.total ?? 0) - this.subtotalBase());
+  // Base e IVA llegan calculados desde la API para que coincidan con el PDF.
+  protected readonly subtotalBase = computed(() => this.sale()?.taxes?.subtotalBase ?? 0);
+  protected readonly iva = computed(() => this.sale()?.taxes?.tax ?? 0);
 
   ngOnInit(): void {
     const id = this.id();
