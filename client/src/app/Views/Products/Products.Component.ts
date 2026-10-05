@@ -205,7 +205,7 @@ export class ProductsComponent implements OnInit {
         q: this.queryText.trim() || undefined,
         onlyActive: this.onlyActive() ? true : undefined,
         page: this.page(),
-        pageSize: 20
+        pageSize: 10
       })
       .subscribe({
         next: (response) => {

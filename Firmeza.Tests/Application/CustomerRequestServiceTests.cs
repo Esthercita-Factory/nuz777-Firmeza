@@ -60,7 +60,8 @@ public class CustomerRequestServiceTests
         Assert.Equal(CustomerRequestStatus.Pending, result.Value.Items[0].Status);
         Assert.Equal(1, result.Value.TotalCount);
         Assert.Equal(1, result.Value.Page);
-        Assert.Equal(20, result.Value.PageSize);
+        // El default de la query: 10 por pagina.
+        Assert.Equal(10, result.Value.PageSize);
     }
 
     [Fact]
@@ -85,9 +86,9 @@ public class CustomerRequestServiceTests
             .ListAsync(Arg.Any<CustomerRequestFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<CustomerSignupRequest> { Items = [], TotalCount = 47 });
 
-        var result = await _sut.ListAsync(new CustomerRequestQuery { Page = 3, PageSize = 20 });
+        var result = await _sut.ListAsync(new CustomerRequestQuery { Page = 5, PageSize = 20 });
 
-        Assert.Equal(3, result.Value!.Page);
+        Assert.Equal(5, result.Value!.Page);
         Assert.Equal(20, result.Value.PageSize);
         Assert.Equal(47, result.Value.TotalCount);
         // 47 registros en paginas de 20 -> 3 paginas.
@@ -95,7 +96,7 @@ public class CustomerRequestServiceTests
 
         await _requests.Received(1).ListAsync(
             Arg.Any<CustomerRequestFilter>(),
-            Arg.Is<PageRequest>(p => p.Page == 3 && p.Take == 20),
+            Arg.Is<PageRequest>(p => p.Page == 5 && p.Take == 20),
             Arg.Any<CancellationToken>());
     }
 

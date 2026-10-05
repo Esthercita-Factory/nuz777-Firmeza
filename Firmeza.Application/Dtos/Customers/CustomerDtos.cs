@@ -58,5 +58,6 @@ public sealed record CustomerQuery
 
     public int Page { get; init; } = 1;
 
-    public int PageSize { get; init; } = 20;
+    // 10 por pagina: con 11 registros ya se ve la paginacion.
+    public int PageSize { get; init; } = 10;
 }

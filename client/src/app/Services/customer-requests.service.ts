@@ -40,7 +40,7 @@ export class CustomerRequestsService {
     status: CustomerSignupStatus = 'Pending',
     q?: string,
     page = 1,
-    pageSize = 20
+    pageSize = 10
   ): Observable<PagedResponse<CustomerSignup>> {
     let params = new HttpParams().set('status', status).set('page', page).set('pageSize', pageSize);
     if (q) params = params.set('q', q);

@@ -240,7 +240,7 @@ export class SalesComponent implements OnInit {
         q: this.queryText.trim() || undefined,
         status: this.status(),
         page: this.page(),
-        pageSize: 20
+        pageSize: 10
       })
       .subscribe({
         next: (response) => {
