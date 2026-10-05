@@ -101,8 +101,17 @@ import { LogoComponent } from '../Layout/Shell.Component';
             <a routerLink="/login" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
               Acceder al panel
             </a>
-            <a routerLink="/register" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700">
+            <a
+              routerLink="/register"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700"
+            >
               Registrar cuenta de cliente
+            </a>
+            <a
+              routerLink="/tienda"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700"
+            >
+              Ver catálogo
             </a>
           </div>
           <dl class="mt-10 grid grid-cols-1 gap-x-8 gap-y-4 border-t border-slate-200 pt-6 sm:grid-cols-3">

@@ -4,7 +4,8 @@ import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
-import { Sale, SalesService } from '../../Services/sales.service';
+import { Sale, SaleStatus, SalesService } from '../../Services/sales.service';
+import { AuthService } from '../../Services/auth.service';
 import { IconComponent } from '../Shared/Icon.Component';
 
 @Component({
@@ -27,29 +28,47 @@ import { IconComponent } from '../Shared/Icon.Component';
       }
 
       @if (sale(); as current) {
-        <div class="flex items-center justify-between">
-          <a routerLink="/ventas" class="text-sm font-bold text-blue-600 hover:text-blue-500">← Volver a ventas</a>
-          <div class="flex items-center gap-2">
-            <a
-              [routerLink]="['/ventas', current.id, 'editar']"
-              class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-500 disabled:pointer-events-none disabled:bg-slate-300"
-              [class.cursor-not-allowed]="current.status === 'Delivered'"
-              [attr.aria-disabled]="current.status === 'Delivered'"
-              [title]="current.status === 'Delivered' ? 'No se puede editar una venta entregada' : 'Editar venta'"
-            >
-              <app-icon name="pencil" [size]="14" />
-              Editar
-            </a>
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-              [disabled]="current.status === 'Delivered'"
-              [title]="current.status === 'Delivered' ? 'No se puede eliminar una venta entregada' : 'Eliminar venta'"
-              (click)="remove(current)"
-            >
-              <app-icon name="trash" [size]="14" />
-              Eliminar
-            </button>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <a
+            [routerLink]="authService.isAdministrator() ? '/ventas' : '/mis-compras'"
+            class="text-sm font-bold text-blue-600 hover:text-blue-500"
+          >
+            ← {{ authService.isAdministrator() ? 'Volver a ventas' : 'Volver a mis compras' }}
+          </a>
+          <div class="flex flex-wrap items-center gap-2">
+            @if (authService.isAdministrator()) {
+              @for (next of nextStatuses(current.status); track next) {
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm transition"
+                  [class]="next === 'Delivered' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'"
+                  (click)="changeStatus(current, next)"
+                >
+                  {{ statusActionLabel(next) }}
+                </button>
+              }
+
+              <a
+                [routerLink]="['/ventas', current.id, 'editar']"
+                class="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:pointer-events-none disabled:bg-slate-300"
+                [class.cursor-not-allowed]="current.status === 'Delivered'"
+                [attr.aria-disabled]="current.status === 'Delivered'"
+                [title]="current.status === 'Delivered' ? 'No se puede editar una venta entregada' : 'Editar venta'"
+              >
+                <app-icon name="pencil" [size]="14" />
+                Editar
+              </a>
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                [disabled]="current.status === 'Delivered'"
+                [title]="current.status === 'Delivered' ? 'No se puede eliminar una venta entregada' : 'Eliminar venta'"
+                (click)="remove(current)"
+              >
+                <app-icon name="trash" [size]="14" />
+                Eliminar
+              </button>
+            }
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700"
@@ -137,6 +156,7 @@ export class SaleDetailComponent implements OnInit {
   readonly id = input<string>();
 
   protected readonly salesService = inject(SalesService);
+  protected readonly authService = inject(AuthService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
   private readonly confirmService = inject(ConfirmService);
@@ -149,6 +169,53 @@ export class SaleDetailComponent implements OnInit {
   // Base e IVA llegan calculados desde la API para que coincidan con el PDF.
   protected readonly subtotalBase = computed(() => this.sale()?.taxes?.subtotalBase ?? 0);
   protected readonly iva = computed(() => this.sale()?.taxes?.tax ?? 0);
+
+  /**
+   * Estados a los que puede avanzar la venta. Refleja las reglas del dominio
+   * (SaleStatusRules): Pendiente -> Confirmada -> Entregada. Entregada y
+   * Cancelada son finales.
+   */
+  protected nextStatuses(current: SaleStatus): SaleStatus[] {
+    switch (current) {
+      case 'Pending':
+        return ['Confirmed', 'Cancelled'];
+      case 'Confirmed':
+        return ['Delivered', 'Cancelled'];
+      default:
+        return [];
+    }
+  }
+
+  protected statusActionLabel(status: SaleStatus): string {
+    switch (status) {
+      case 'Confirmed':
+        return 'Confirmar solicitud';
+      case 'Delivered':
+        return 'Marcar entregado';
+      case 'Cancelled':
+        return 'Cancelar';
+      default:
+        return this.salesService.statusLabel(status);
+    }
+  }
+
+  protected async changeStatus(sale: Sale, status: SaleStatus): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: this.statusActionLabel(status),
+      message: `¿Pasar la venta ${sale.saleNumber} a "${this.salesService.statusLabel(status)}"?`,
+      confirmLabel: this.statusActionLabel(status),
+      tone: status === 'Cancelled' ? 'danger' : 'default'
+    });
+    if (!confirmed) return;
+
+    this.salesService.changeStatus(sale.id, status).subscribe({
+      next: (updated) => {
+        this.sale.set(updated);
+        this.toastService.success(`Venta ${updated.saleNumber}: ${this.salesService.statusLabel(updated.status)}.`);
+      },
+      error: (error) => this.toastService.error(toApiError(error).message)
+    });
+  }
 
   ngOnInit(): void {
     const id = this.id();

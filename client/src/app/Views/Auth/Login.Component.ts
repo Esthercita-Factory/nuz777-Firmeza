@@ -271,17 +271,19 @@ export class LoginComponent {
 
     this.authService.login({ email: this.email.trim(), password: this.password }).subscribe({
       next: (tokens) => {
-        if (!tokens.user.roles.includes(ADMINISTRATOR_ROLE)) {
-          this.authService.logout(false);
-          this.errorMessage.set('Los clientes utilizan el portal de clientes y no pueden entrar al panel administrativo.');
-          this.loading.set(false);
-          return;
-        }
-
         this.authService.saveSession(tokens);
 
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        this.router.navigate([returnUrl && returnUrl.startsWith('/') ? returnUrl : '/dashboard']);
+
+        // El destino depende del rol: el administrador entra al panel, el cliente
+        // a su portal. Antes el login rechazaba al cliente; ahora cada rol tiene
+        // su landing y adminGuard protege el panel por separado.
+        if (tokens.user.roles.includes(ADMINISTRATOR_ROLE)) {
+          this.router.navigate([returnUrl && returnUrl.startsWith('/') ? returnUrl : '/dashboard']);
+          return;
+        }
+
+        this.router.navigate([returnUrl && returnUrl.startsWith('/') ? returnUrl : '/tienda']);
       },
       error: (error) => {
         this.errorMessage.set(toApiError(error).message);
