@@ -6,9 +6,16 @@ namespace Firmeza.Application.Dtos.Sales;
 
 public sealed class SaleRequest
 {
+    /// <summary>
+    /// Cliente de la venta.
+    ///
+    /// Opcional a proposito: cuando quien compra es un Cliente del portal, la API
+    /// lo sustituye por su propia ficha e ignora este valor. Si fuera [Required],
+    /// el request fallaria en el binding antes de llegar al controller. La
+    /// validacion real la hacen SalesController y SaleService.
+    /// </summary>
     [Display(Name = "Cliente")]
-    [Required(ErrorMessage = "El cliente es obligatorio.")]
-    public Guid CustomerId { get; set; }
+    public Guid? CustomerId { get; set; }
 
     [Display(Name = "Estado")]
     public SaleStatus? Status { get; set; }
@@ -72,6 +79,14 @@ public sealed record SaleResponse(
     SaleTaxesResponse Taxes,
     string? CreatedByUserId,
     IReadOnlyList<SaleLineResponse> Lines);
+
+/// <summary>Cambio de estado de una venta. Solo el administrador lo puede pedir.</summary>
+public sealed class UpdateSaleStatusRequest
+{
+    [Display(Name = "Estado")]
+    [Required(ErrorMessage = "El estado es obligatorio.")]
+    public SaleStatus Status { get; set; }
+}
 
 public sealed record SaleQuery
 {

@@ -12,5 +12,18 @@ public class Sale
     public SaleStatus Status { get; set; } = SaleStatus.Pending;
     public decimal Total { get; set; }
     public string? CreatedByUserId { get; set; }
+
+    /// <summary>Quien confirmo la solicitud. Viene del admin, no del cliente.</summary>
+    public string? ConfirmedByUserId { get; set; }
+
+    /// <summary>Cuando se confirmo la solicitud.</summary>
+    public DateTimeOffset? ConfirmedAt { get; set; }
+
+    /// <summary>Cuando se marco como entregada.</summary>
+    public DateTimeOffset? DeliveredAt { get; set; }
+
+    /// <summary>Cuando se cancelo.</summary>
+    public DateTimeOffset? CancelledAt { get; set; }
+
     public ICollection<SaleDetail> Details { get; set; } = new List<SaleDetail>();
 }

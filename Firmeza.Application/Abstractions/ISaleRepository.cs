@@ -14,6 +14,9 @@ public interface ISaleRepository
 {
     Task<PagedResult<Sale>> ListAsync(SaleFilter filter, PageRequest page, CancellationToken cancellationToken = default);
 
+    /// <summary>Cuentas las ventas en un estado. Sirve para topes y para el panel.</summary>
+    Task<int> CountByStatusAsync(SaleStatus status, Guid customerId, CancellationToken cancellationToken = default);
+
     Task<Sale?> FindWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<Sale?> FindByNumberAsync(string saleNumber, CancellationToken cancellationToken = default);

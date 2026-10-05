@@ -63,10 +63,13 @@ public sealed class SaleService : ISaleService
             return Result.Failure<SaleResponse>(Error.Validation("La venta debe tener al menos una linea."));
         }
 
-        var customer = await _customers.FindByIdAsync(request.CustomerId, cancellationToken);
+        var customer = await _customers.FindByIdAsync(request.CustomerId!.Value, cancellationToken);
         if (customer is null)
         {
-            return Result.Failure<SaleResponse>(Error.EntityNotFound("Cliente", request.CustomerId));
+            return Result.Failure<SaleResponse>(
+                request.CustomerId is null
+                    ? Error.Validation("El cliente es obligatorio.")
+                    : Error.EntityNotFound("Cliente", request.CustomerId));
         }
 
         if (!customer.IsActive)
@@ -110,7 +113,9 @@ public sealed class SaleService : ISaleService
             var unitPrice = requested.UnitPrice ?? product.Price;
             var subtotal = InventoryCalculator.CalculateLineTotal(requested.Quantity, unitPrice);
 
-            product.Stock -= requested.Quantity;
+            // NO se descuenta stock aqui. Una solicitud del portal no es una venta
+            // firme: el descuento real ocurre al confirmar (ChangeStatusAsync). Asi
+            // una solicitud cancelada nunca deja inventario fantasma.
             details.Add(new SaleDetail
             {
                 ProductId = product.Id,
@@ -227,10 +232,13 @@ public sealed class SaleService : ISaleService
             return Result.Failure<SaleResponse>(Error.Validation("La venta debe tener al menos una linea."));
         }
 
-        var customer = await _customers.FindByIdAsync(request.CustomerId, cancellationToken);
+        var customer = await _customers.FindByIdAsync(request.CustomerId!.Value, cancellationToken);
         if (customer is null)
         {
-            return Result.Failure<SaleResponse>(Error.EntityNotFound("Cliente", request.CustomerId));
+            return Result.Failure<SaleResponse>(
+                request.CustomerId is null
+                    ? Error.Validation("El cliente es obligatorio.")
+                    : Error.EntityNotFound("Cliente", request.CustomerId));
         }
 
         if (!customer.IsActive)
@@ -271,16 +279,23 @@ public sealed class SaleService : ISaleService
         var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
         var productsById = products.ToDictionary(product => product.Id);
 
-        // 1. Se devuelve al stock lo que esta venta habia descontado.
-        foreach (var detail in sale.Details)
+        // 1. Se devuelve al stock lo que esta venta tenia descontado. Si venia de
+        // Pendiente, no tenia nada descontado y devolverlo crearia inventario.
+        var hadStockDeducted = HasStockDeducted(sale.Status);
+        if (hadStockDeducted)
         {
-            if (productsById.TryGetValue(detail.ProductId, out var product))
+            foreach (var detail in sale.Details)
             {
-                product.Stock += detail.Quantity;
+                if (productsById.TryGetValue(detail.ProductId, out var product))
+                {
+                    product.Stock += detail.Quantity;
+                }
             }
         }
 
-        // 2. Del stock devuelto se descuenta lo que la venta pasa a tener.
+        // 2. Del stock disponible se descuenta lo que la venta pasa a tener,
+        //    pero solo si la venta ya estaba confirmada. Editar una solicitud
+        //    pendiente no descuenta: el descuento ocurre al confirmar.
         var details = new List<SaleDetail>(requestedLines.Count);
         foreach (var (productId, requested) in requestedLines)
         {
@@ -296,17 +311,22 @@ public sealed class SaleService : ISaleService
                 return Result.Failure<SaleResponse>(Error.BusinessRule($"El producto '{product.Name}' esta inactivo."));
             }
 
-            if (product.Stock < requested.Quantity)
+            // Al validar el stock se compara contra lo disponible + lo devuelto.
+            var available = product.Stock + (hadStockDeducted ? sale.Details.Where(d => d.ProductId == productId).Sum(d => d.Quantity) : 0);
+            if (available < requested.Quantity)
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return Result.Failure<SaleResponse>(
-                    Error.BusinessRule($"Stock insuficiente para '{product.Name}'. Disponible: {product.Stock}."));
+                    Error.BusinessRule($"Stock insuficiente para '{product.Name}'. Disponible: {available}."));
             }
 
             var unitPrice = requested.UnitPrice ?? product.Price;
             var subtotal = InventoryCalculator.CalculateLineTotal(requested.Quantity, unitPrice);
 
-            product.Stock -= requested.Quantity;
+            if (hadStockDeducted)
+            {
+                product.Stock -= requested.Quantity;
+            }
 
             // La navegacion se asigna para que ToResponse devuelva sku y nombre
             // sin tener que recargar las lineas.
@@ -346,6 +366,136 @@ public sealed class SaleService : ISaleService
         return Result.Success(ToResponse(sale));
     }
 
+    /// <summary>
+    /// Si la venta tiene el stock descontado. El descuento ocurre al confirmar, asi
+    /// que Pending todavia no lo tiene y Cancelled depende de como se llego.
+    /// </summary>
+    private static bool HasStockDeducted(SaleStatus status)
+        => status is SaleStatus.Confirmed or SaleStatus.Delivered;
+
+    /// <summary>
+    /// Devuelve al stock lo que la venta habia descontado. Si el producto ya no
+    /// existe, se ignora en lugar de romper la operacion.
+    /// </summary>
+    private async Task RestoreStockAsync(Sale sale, CancellationToken cancellationToken)
+    {
+        var productIds = sale.Details.Select(detail => detail.ProductId).Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return;
+        }
+
+        var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
+        var byId = products.ToDictionary(product => product.Id);
+
+        foreach (var detail in sale.Details)
+        {
+            if (byId.TryGetValue(detail.ProductId, out var product))
+            {
+                product.Stock += detail.Quantity;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Descuenta el stock de la venta. Se llama al confirmar: si no alcanza, la
+    /// confirmacion falla con 422 y el admin puede cancelar en vez de confirmar.
+    /// </summary>
+    private async Task<Result> DeductStockAsync(Sale sale, CancellationToken cancellationToken)
+    {
+        var productIds = sale.Details.Select(detail => detail.ProductId).Distinct().ToList();
+        if (productIds.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
+        var byId = products.ToDictionary(product => product.Id);
+
+        // Se valida todo antes de descontar nada: si una linea no alcanza, no se
+        // descuenta ninguna.
+        foreach (var detail in sale.Details)
+        {
+            if (!byId.TryGetValue(detail.ProductId, out var product))
+            {
+                return Result.Failure(Error.EntityNotFound("Producto", detail.ProductId));
+            }
+
+            if (product.Stock < detail.Quantity)
+            {
+                return Result.Failure(
+                    Error.BusinessRule($"Stock insuficiente para '{product.Name}'. Disponible: {product.Stock}, solicitado: {detail.Quantity}."));
+            }
+        }
+
+        foreach (var detail in sale.Details)
+        {
+            byId[detail.ProductId].Stock -= detail.Quantity;
+        }
+
+        return Result.Success();
+    }
+
+    public async Task<Result<SaleResponse>> ChangeStatusAsync(Guid id, SaleStatus status, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        var sale = await _sales.FindByIdForUpdateAsync(id, cancellationToken);
+        if (sale is null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(Error.EntityNotFound("Venta", id));
+        }
+
+        if (!SaleStatusRules.CanTransition(sale.Status, status))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(
+                Error.BusinessRule(SaleStatusRules.RejectReason(sale.Status, status)));
+        }
+
+        var previous = sale.Status;
+        var now = _clock.UtcNow;
+
+        if (status == SaleStatus.Confirmed)
+        {
+            // Aqui si se descuenta. Antes valido el total de las lineas.
+            var deducted = await DeductStockAsync(sale, cancellationToken);
+            if (deducted.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<SaleResponse>(deducted.Error!);
+            }
+
+            sale.ConfirmedByUserId = _currentUser.UserId;
+            sale.ConfirmedAt = now;
+        }
+        else if (status == SaleStatus.Cancelled && HasStockDeducted(previous))
+        {
+            // Venia de Confirmada o Entregada: el stock estaba descontado y hay que
+            // devolverlo, o el inventario se queda con trabajo fantasma.
+            await RestoreStockAsync(sale, cancellationToken);
+            sale.CancelledAt = now;
+        }
+        else if (status == SaleStatus.Cancelled)
+        {
+            // Venia de Pendiente: nunca se habia descontado nada.
+            sale.CancelledAt = now;
+        }
+
+        if (status == SaleStatus.Delivered)
+        {
+            sale.DeliveredAt = now;
+        }
+
+        sale.Status = status;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return Result.Success(ToResponse(sale));
+    }
+
     public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -363,19 +513,11 @@ public sealed class SaleService : ISaleService
             return Result.Failure(Error.BusinessRule("No se puede borrar una venta que ya ha sido entregada."));
         }
 
-        var productIds = sale.Details.Select(detail => detail.ProductId).Distinct().ToList();
-        if (productIds.Count > 0)
+        // Solo se devuelve stock si la venta lo tenia descontado. Una solicitud
+        // pendiente nunca lo descontó, y devolverlo seria crear inventario.
+        if (HasStockDeducted(sale.Status))
         {
-            var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
-            var productsById = products.ToDictionary(product => product.Id);
-
-            foreach (var detail in sale.Details)
-            {
-                if (productsById.TryGetValue(detail.ProductId, out var product))
-                {
-                    product.Stock += detail.Quantity;
-                }
-            }
+            await RestoreStockAsync(sale, cancellationToken);
         }
 
         _sales.Remove(sale);

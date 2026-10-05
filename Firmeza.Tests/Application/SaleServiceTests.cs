@@ -33,7 +33,7 @@ public class SaleServiceTests
         => new() { Id = Guid.NewGuid(), Sku = "SKU-1", Name = "Cemento", Price = price, Stock = stock, IsActive = true };
 
     [Fact]
-    public async Task CreateAsync_ComputesTotalsAndDecrementsStock()
+    public async Task CreateAsync_ComputesTotalsWithoutDeductingStock()
     {
         var product = Product(stock: 10, price: 12.50m);
         _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
@@ -50,8 +50,29 @@ public class SaleServiceTests
         Assert.Equal(SaleStatus.Pending, result.Value.Status);
         Assert.StartsWith($"VTA-{_clock.UtcNow:yyyyMMdd}-", result.Value.SaleNumber, StringComparison.Ordinal);
         Assert.Equal("user-1", result.Value.CreatedByUserId);
-        Assert.Equal(7, product.Stock);
+        // Una solicitud no descuenta stock: se descuenta al confirmar. Asi una
+        // solicitud cancelada nunca deja inventario fantasma.
+        Assert.Equal(10, product.Stock);
         Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task CreateAsync_StillRejectsMoreThanTheStockOnHand()
+    {
+        // Aunque no descuente, debe avisar al confirmar que no alcanza.
+        var product = Product(stock: 2, price: 5m);
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.CreateAsync(new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 5 }]
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.Equal(2, product.Stock);
     }
 
     [Fact]
@@ -92,7 +113,7 @@ public class SaleServiceTests
         Assert.Single(result.Value!.Lines);
         Assert.Equal(5, result.Value.Lines[0].Quantity);
         Assert.Equal(25m, result.Value.Total);
-        Assert.Equal(45, product.Stock);
+        Assert.Equal(50, product.Stock);
     }
 
     [Fact]
@@ -246,20 +267,38 @@ public class SaleServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_RestoresStockAndRemovesSale()
+    public async Task DeleteAsync_RestoresStockOnlyWhenItWasDeducted()
     {
-        var product = Product(stock: 4);
+        var product = Product(stock: 7);
         var sale = PendingSale((product.Id, 3));
+        sale.Status = SaleStatus.Confirmed;
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
 
         var result = await _sut.DeleteAsync(sale.Id);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(7, product.Stock);
+        // Confirmada: el stock estaba descontado, borrar lo devuelve (7 + 3).
+        Assert.Equal(10, product.Stock);
         _sales.Received(1).Remove(sale);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DoesNotCreateInventoryWhenTheSaleWasPending()
+    {
+        // Una solicitud pendiente nunca desconto stock, asi que borrarla no
+        // devuelve nada: hacerlo fabricaria inventario.
+        var product = Product(stock: 10);
+        var sale = PendingSale((product.Id, 3));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        var result = await _sut.DeleteAsync(sale.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(10, product.Stock);
+        await _products.DidNotReceive().FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -267,6 +306,7 @@ public class SaleServiceTests
     {
         var product = Product(stock: 0);
         var sale = PendingSale((product.Id, 2), (product.Id, 5));
+        sale.Status = SaleStatus.Confirmed;
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
 
@@ -312,7 +352,33 @@ public class SaleServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsTheQuantityItHadConsumedToStock()
     {
-        var product = Product(stock: 5); // 10 comprados menos 5 de esta venta
+        var product = Product(stock: 5); // 10 - 5 al confirmar
+        var sale = PendingSale((product.Id, 5));
+        sale.Status = SaleStatus.Confirmed;
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 8 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        // Confirmada: 5 + 5 devueltos - 8 nuevos = 2
+        Assert.Equal(2, product.Stock);
+        Assert.Equal(8, result.Value!.Lines.Single().Quantity);
+        Assert.Equal(80m, result.Value.Total);
+        Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_EditingAPendingSaleDoesNotTouchStock()
+    {
+        // Una solicitud pendiente no tiene stock descontado: editarla no debe
+        // devolver ni descontar nada.
+        var product = Product(stock: 10);
         var sale = PendingSale((product.Id, 5));
         _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
@@ -325,11 +391,7 @@ public class SaleServiceTests
         });
 
         Assert.True(result.IsSuccess);
-        // 5 + 5 devueltos - 8 nuevos = 2
-        Assert.Equal(2, product.Stock);
-        Assert.Equal(8, result.Value!.Lines.Single().Quantity);
-        Assert.Equal(80m, result.Value.Total);
-        Assert.True(_transaction.Committed);
+        Assert.Equal(10, product.Stock);
     }
 
     [Fact]
@@ -338,6 +400,7 @@ public class SaleServiceTests
         var cemento = Product(stock: 90);
         var ladrillo = new Product { Id = Guid.NewGuid(), Sku = "LAD-004", Name = "Ladrillo", Price = 5m, Stock = 40, IsActive = true };
         var sale = PendingSale((cemento.Id, 10), (ladrillo.Id, 8));
+        sale.Status = SaleStatus.Confirmed;
         _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([cemento, ladrillo]);
@@ -419,6 +482,129 @@ public class SaleServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(SaleStatus.Confirmed, result.Value!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_AdvancesFromPendingToConfirmed()
+    {
+        var sale = PendingSale();
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Confirmed);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SaleStatus.Confirmed, result.Value!.Status);
+        Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_RejectsAnInvalidTransition()
+    {
+        var sale = PendingSale();
+        sale.Status = SaleStatus.Confirmed;
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        // Entregada -> Confirmada esta bloqueada: la entrega es un estado final.
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Confirmed);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.Equal(SaleStatus.Confirmed, sale.Status);
+        Assert.True(_transaction.RolledBack);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_DeductsStockOnConfirm()
+    {
+        var product = Product(stock: 10);
+        var sale = PendingSale((product.Id, 4));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Confirmed);
+
+        Assert.True(result.IsSuccess);
+        // Este es el punto del descuento: al confirmar, no al crear.
+        Assert.Equal(6, product.Stock);
+        Assert.Equal("user-1", sale.ConfirmedByUserId);
+        Assert.Equal(_clock.UtcNow, sale.ConfirmedAt);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ReturnsTheStockWhenAConfirmedSaleIsCancelled()
+    {
+        // Regresion: cancelar no devolvia el stock y el inventario se vaciaba.
+        var product = Product(stock: 6); // 10 - 4 al confirmar
+        var sale = PendingSale((product.Id, 4));
+        sale.Status = SaleStatus.Confirmed;
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(10, product.Stock);
+        Assert.Equal(_clock.UtcNow, sale.CancelledAt);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_CancellingAPendingSaleDoesNotTouchStock()
+    {
+        // Nunca se habia descontado, devolverlo fabricaria inventario.
+        var product = Product(stock: 10);
+        var sale = PendingSale((product.Id, 4));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(10, product.Stock);
+        await _products.DidNotReceive().FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_FailsToConfirmWhenStockIsGone()
+    {
+        // Otro cliente se llevo el stock entre la solicitud y la confirmacion.
+        var product = Product(stock: 1);
+        var sale = PendingSale((product.Id, 4));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Confirmed);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        // No se descuenta a medias: el producto sigue intacto.
+        Assert.Equal(1, product.Stock);
+        Assert.Equal(SaleStatus.Pending, sale.Status);
+        Assert.True(_transaction.RolledBack);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_StampsDeliveredAt()
+    {
+        var sale = PendingSale();
+        sale.Status = SaleStatus.Confirmed;
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([]);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Delivered);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(_clock.UtcNow, sale.DeliveredAt);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ReturnsNotFoundWhenTheSaleDoesNotExist()
+    {
+        _sales.FindByIdForUpdateAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Sale?)null);
+
+        var result = await _sut.ChangeStatusAsync(Guid.NewGuid(), SaleStatus.Confirmed);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.NotFound, result.Error!.Code);
     }
 
     private Sale PendingSale(params (Guid ProductId, int Quantity)[] lines)

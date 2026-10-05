@@ -3,6 +3,7 @@ using Firmeza.Application.Abstractions;
 using Firmeza.Application.Common;
 using Firmeza.Application.Dtos.Sales;
 using Firmeza.Application.Services.Sales;
+using Firmeza.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,11 +23,13 @@ public sealed class SalesController : ControllerBase
 {
     private readonly ISaleService _sales;
     private readonly ICustomerRepository _customers;
+    private readonly ISaleRepository _saleRepository;
 
-    public SalesController(ISaleService sales, ICustomerRepository customers)
+    public SalesController(ISaleService sales, ICustomerRepository customers, ISaleRepository saleRepository)
     {
         _sales = sales;
         _customers = customers;
+        _saleRepository = saleRepository;
     }
 
     /// <summary>
@@ -111,8 +114,11 @@ public sealed class SalesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<SaleResponse>> Create([FromBody] SaleRequest request, CancellationToken cancellationToken)
     {
-        // Si quien compra es un Cliente, el cliente de la venta es su propia
-        // ficha. No se toma del cuerpo para que no pueda comprar en nombre de otro.
+        // El cliente de la venta lo decide el servidor: un Cliente compra para su
+        // propia ficha y el valor del cuerpo se descarta; el Administrador puede
+        // registrar una venta para cualquiera del directorio.
+        var customerId = request.CustomerId;
+
         if (!this.IsAdministrator())
         {
             var mine = await ResolveScopeAsync();
@@ -121,10 +127,36 @@ public sealed class SalesController : ControllerBase
                 return this.Forbidden("Tu cuenta aun no esta vinculada a una ficha de cliente.");
             }
 
-            if (request.CustomerId != mine.Value)
+            customerId = mine.Value;
+        }
+        else if (customerId is null)
+        {
+            return BadRequest(new ProblemDetails
             {
-                return this.Forbidden("No podes crear ventas a nombre de otro cliente.");
+                Title = "Solicitud invalida",
+                Detail = "El cliente es obligatorio.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
+        request.CustomerId = customerId;
+
+        // El cliente del portal solicita: su venta nace Pendiente y el estado
+        // que mande en el cuerpo se descarta. Confirmar y entregar es del admin.
+        if (!this.IsAdministrator())
+        {
+            var pending = await _saleRepository.CountByStatusAsync(SaleStatus.Pending, customerId.Value, cancellationToken);
+            if (pending >= SaleServiceLimits.MaxPendingPerCustomer)
+            {
+                return Conflict(new ProblemDetails
+                {
+                    Title = "Demasiadas solicitudes pendientes",
+                    Detail = $"Ya tenes {pending} solicitudes pendientes. Espera a que se confirmen antes de enviar otra.",
+                    Status = StatusCodes.Status409Conflict
+                });
             }
+
+            request.Status = SaleStatus.Pending;
         }
 
         var result = await _sales.CreateAsync(request, cancellationToken);
@@ -197,6 +229,55 @@ public sealed class SalesController : ControllerBase
     public async Task<ActionResult<SaleResponse>> Update(Guid id, [FromBody] SaleRequest request, CancellationToken cancellationToken)
     {
         var result = await _sales.UpdateAsync(id, request, cancellationToken);
+        if (result.IsFailure)
+        {
+            return new ObjectResult(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Cancela una solicitud pendiente. Disponible para el Cliente (siempre que
+    /// sea suya y este pendiente) y para el Administrador. Confirmar y entregar
+    /// siguen siendo solo del admin.
+    /// </summary>
+    [HttpPost("{id:guid}/cancel")]
+    [ProducesResponseType(typeof(SaleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SaleResponse>> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await CanAccessSaleAsync(id))
+        {
+            return this.IsAdministrator() ? NotFound() : this.Forbidden("La venta no pertenece a tu cuenta.");
+        }
+
+        var result = await _sales.ChangeStatusAsync(id, SaleStatus.Cancelled, cancellationToken);
+        if (result.IsFailure)
+        {
+            return new ObjectResult(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Avanza el estado de una venta. Solo Administrador: es el quien confirma lo
+    /// que el cliente solicita y lo marca como entregado.
+    /// </summary>
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = Firmeza.Domain.Identity.ApplicationRoles.Administrator)]
+    [ProducesResponseType(typeof(SaleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SaleResponse>> ChangeStatus(
+        Guid id,
+        [FromBody] UpdateSaleStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sales.ChangeStatusAsync(id, request.Status, cancellationToken);
         if (result.IsFailure)
         {
             return new ObjectResult(result);

@@ -15,5 +15,8 @@ public interface ISaleService
 
     Task<Result<SaleResponse>> UpdateAsync(Guid id, SaleRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Avanza el estado de la venta (confirmar, entregar, cancelar).</summary>
+    Task<Result<SaleResponse>> ChangeStatusAsync(Guid id, SaleStatus status, CancellationToken cancellationToken = default);
+
     Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -1,6 +1,7 @@
 using Firmeza.Application.Abstractions;
 using Firmeza.Application.Common;
 using Firmeza.Domain.Entities;
+using Firmeza.Domain.Enums;
 using Firmeza.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,9 @@ public sealed class SaleRepository : ISaleRepository
     {
         _db = db;
     }
+
+    public Task<int> CountByStatusAsync(SaleStatus status, Guid customerId, CancellationToken cancellationToken = default)
+        => _db.Sales.CountAsync(sale => sale.Status == status && sale.CustomerId == customerId, cancellationToken);
 
     public async Task<PagedResult<Sale>> ListAsync(SaleFilter filter, PageRequest page, CancellationToken cancellationToken = default)
     {
