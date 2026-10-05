@@ -1,0 +1,31 @@
+# Imagen de pruebas: compila Firmeza.Tests y ejecuta dotnet test.
+# Si alguna prueba falla el contenedor sale con codigo distinto de 0, y eso es
+# lo que hace que docker compose no levante api ni web.
+#
+#   docker build -f Dockerfile.tests -t firmeza-tests .
+#   docker run --rm firmeza-tests
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Primero solo los .csproj: asi la capa de restore se cachea y no se
+# invalida cada vez que cambia un archivo de codigo.
+COPY Firmeza.sln ./
+COPY Firmeza.Domain/Firmeza.Domain.csproj Firmeza.Domain/
+COPY Firmeza.Application/Firmeza.Application.csproj Firmeza.Application/
+COPY Firmeza.Infrastructure/Firmeza.Infrastructure.csproj Firmeza.Infrastructure/
+COPY Firmeza.Api/Firmeza.Api.csproj Firmeza.Api/
+COPY Firmeza.Web/Firmeza.Web.csproj Firmeza.Web/
+COPY Firmeza.Tests/Firmeza.Tests.csproj Firmeza.Tests/
+RUN dotnet restore Firmeza.Tests/Firmeza.Tests.csproj
+
+COPY Firmeza.Domain/ Firmeza.Domain/
+COPY Firmeza.Application/ Firmeza.Application/
+COPY Firmeza.Infrastructure/ Firmeza.Infrastructure/
+COPY Firmeza.Api/ Firmeza.Api/
+COPY Firmeza.Tests/ Firmeza.Tests/
+
+RUN dotnet build Firmeza.Tests/Firmeza.Tests.csproj -c Release --no-restore
+
+# dotnet test devuelve != 0 si alguna prueba falla, que es lo que hace que
+# docker compose no levante el resto de los servicios.
+ENTRYPOINT ["dotnet", "test", "Firmeza.Tests/Firmeza.Tests.csproj", "-c", "Release", "--no-build", "--logger", "console;verbosity=normal"]

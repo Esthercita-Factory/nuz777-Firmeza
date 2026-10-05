@@ -1,0 +1,24 @@
+# Barrera de calidad: las pruebas se ejecutan antes de levantar el sistema.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gates.yml up --build
+#
+# Si alguna prueba falla, el contenedor tests sale con codigo != 0 y compose no
+# levanta ni la API ni el panel. Para levantar el sistema sin correr los tests:
+#
+#   docker compose up --build
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    image: ${FIRMEZA_TESTS_IMAGE:-firmeza-tests:local}
+
+  api:
+    depends_on:
+      tests:
+        condition: service_completed_successfully
+
+  web:
+    depends_on:
+      tests:
+        condition: service_completed_successfully
