@@ -5,13 +5,49 @@ on:
     branches: [main]
     tags: ["v*"]
 
+  # Permite probar el pipeline desde una rama sin publicar imagenes.
+  pull_request:
+    branches: [main]
+
 permissions:
   contents: read
   packages: write
 
 jobs:
-  docker:
+  # Barrera de calidad: corre Firmeza.Tests dentro de Docker (misma imagen que
+  # usa docker-compose.gates.yml). Si falla, no se construye ni publica ninguna
+  # imagen, y el job de docker queda en skipped.
+  tests:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build the test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.tests
+          # Esta imagen es efimera: existe solo para correr los tests en este job.
+          # push:false la deja en el runner y no la sube a GHCR. No cambiar a
+          # push:true, la imagen de pruebas no debe publicarse en el registry.
+          push: false
+          load: true
+          tags: firmeza-tests:ci
+          cache-from: type=gha,scope=tests
+          cache-to: type=gha,mode=max,scope=tests
+
+      - name: Run the test suite
+        run: docker run --rm firmeza-tests:ci
+
+  docker:
+    # needs: sin esto, las imagenes se publicarian aunque los tests fallen.
+    needs: tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     strategy:
       matrix:
         include:

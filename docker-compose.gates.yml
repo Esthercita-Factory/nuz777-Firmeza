@@ -11,6 +11,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tests
+    # Etiqueta local a proposito: la imagen de pruebas no se publica en ningun
+    # registry, solo se usa como puerta del despliegue.
     image: ${FIRMEZA_TESTS_IMAGE:-firmeza-tests:local}
 
   api:
