@@ -42,3 +42,16 @@ export class AdminGuard implements CanActivate {
 }
 
 export const adminGuard = () => inject(AdminGuard).canActivate();
+
+/** Portal del cliente: exige sesion, pero cualquiera de los dos roles. */
+@Injectable({ providedIn: 'root' })
+export class CustomerGuard implements CanActivate {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  canActivate(): boolean | UrlTree {
+    return this.authService.isAuthenticated() ? true : this.router.createUrlTree(['/login']);
+  }
+}
+
+export const customerGuard = () => inject(CustomerGuard).canActivate();

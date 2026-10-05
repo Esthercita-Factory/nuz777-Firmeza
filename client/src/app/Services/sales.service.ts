@@ -61,7 +61,12 @@ export interface SaleLineRequest {
 }
 
 export interface SaleRequest {
-  customerId: string;
+  /**
+   * Cliente de la venta. El Cliente del portal lo deja en null: la API lo
+   * resuelve desde el correo del token y rechaza comprar en nombre de otro.
+   * El Administrador puede mandar cualquiera del directorio.
+   */
+  customerId: string | null;
   status: SaleStatus | null;
   lines: SaleLineRequest[];
 }
@@ -100,6 +105,16 @@ export class SalesService {
 
   update(id: string, request: SaleRequest): Observable<Sale> {
     return this.http.put<Sale>(`${this.baseUrl}/${id}`, request);
+  }
+
+  /** Avanza el estado de la venta. Solo el administrador. */
+  changeStatus(id: string, status: SaleStatus): Observable<Sale> {
+    return this.http.patch<Sale>(`${this.baseUrl}/${id}/status`, { status });
+  }
+
+  /** Cancela una solicitud pendiente. Disponible para el cliente y el admin. */
+  cancelRequest(id: string): Observable<Sale> {
+    return this.http.post<Sale>(`${this.baseUrl}/${id}/cancel`, {});
   }
 
   delete(id: string): Observable<void> {

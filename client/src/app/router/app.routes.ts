@@ -16,7 +16,11 @@ import { SaleFormComponent } from '../Views/Sales/SaleForm.Component';
 import { SaleDetailComponent } from '../Views/Sales/SaleDetail.Component';
 import { ImportsComponent } from '../Views/Imports/Imports.Component';
 import { AccessDeniedComponent } from '../Views/Errors/AccessDenied.Component';
-import { adminGuard, authGuard } from '../Guards/auth.guard';
+import { ShopComponent } from '../Views/Shop/Shop.Component';
+import { CheckoutComponent } from '../Views/Shop/Checkout.Component';
+import { ClientShellComponent } from '../Views/Shop/ClientShell.Component';
+import { MyOrdersComponent } from '../Views/Shop/MyOrders.Component';
+import { adminGuard, authGuard, customerGuard } from '../Guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
@@ -45,6 +49,21 @@ export const routes: Routes = [
       { path: 'ventas/:id', component: SaleDetailComponent },
       { path: 'ventas/:id/editar', component: SaleFormComponent },
       { path: 'carga-masiva', component: ImportsComponent }
+    ]
+  },
+  {
+    // Portal del cliente: catalogo y carrito. Fuera del bloque de administracion
+    // porque el guard de arriba exige rol Administrador.
+    path: '',
+    component: ClientShellComponent,
+    canActivate: [customerGuard],
+    children: [
+      { path: 'tienda', component: ShopComponent },
+      { path: 'carrito', component: CheckoutComponent },
+      { path: 'mis-compras', component: MyOrdersComponent },
+      // El detalle lo comparte el panel y el portal: la API ya lo limita a las
+      // ventas propias cuando quien llama es un Cliente.
+      { path: 'compras/:id', component: SaleDetailComponent }
     ]
   },
   { path: '**', redirectTo: '' }
