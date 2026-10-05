@@ -13,5 +13,7 @@ public interface ISaleService
 
     Task<Result<SaleResponse>> CreateAsync(SaleRequest request, CancellationToken cancellationToken = default);
 
+    Task<Result<SaleResponse>> UpdateAsync(Guid id, SaleRequest request, CancellationToken cancellationToken = default);
+
     Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

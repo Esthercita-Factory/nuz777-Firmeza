@@ -13,6 +13,8 @@ public class AuthServiceTests
     private readonly IUserService _users = Substitute.For<IUserService>();
     private readonly ITokenService _tokens = Substitute.For<ITokenService>();
     private readonly IRefreshTokenRepository _refreshTokens = Substitute.For<IRefreshTokenRepository>();
+    private readonly ICustomerRequestRepository _requests = Substitute.For<ICustomerRequestRepository>();
+    private readonly ICustomerRepository _customers = Substitute.For<ICustomerRepository>();
     private readonly ICurrentUserService _currentUser = TestDoubles.CurrentUser();
     private readonly IUnitOfWork _unitOfWork = TestDoubles.UnitOfWork(out _);
     private readonly TestClock _clock = new();
@@ -22,7 +24,7 @@ public class AuthServiceTests
 
     public AuthServiceTests()
     {
-        _sut = new AuthService(_users, _tokens, _refreshTokens, _currentUser, _clock, _unitOfWork);
+        _sut = new AuthService(_users, _tokens, _refreshTokens, _requests, _customers, _currentUser, _clock, _unitOfWork);
         _tokens.CreateTokenPair(Arg.Any<UserAccount>(), Arg.Any<IReadOnlyCollection<string>>())
             .Returns(new TokenPair("access-token", _clock.UtcNow.AddMinutes(30), "refresh-token", _clock.UtcNow.AddDays(7)));
         _tokens.HashRefreshToken(Arg.Any<string>()).Returns(callInfo => $"hash:{callInfo.Arg<string>()}");

@@ -16,17 +16,35 @@ public sealed class LoginRequest
 
 public sealed class RegisterRequest
 {
+    [Display(Name = "Documento")]
+    [Required(ErrorMessage = "El documento es obligatorio.")]
+    [StringLength(30)]
+    public string Document { get; set; } = string.Empty;
+
     [Display(Name = "Nombre completo")]
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [RegularExpression(@"^[a-zA-ZÁÉÍÓÚÜÑáéíóúüñ' -]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
     [StringLength(120)]
     public string FullName { get; set; } = string.Empty;
 
+    [Display(Name = "Edad")]
+    [Range(18, 120, ErrorMessage = "La edad debe estar entre 18 y 120 anios.")]
+    public int Age { get; set; }
+
     [Display(Name = "Correo")]
     [Required(ErrorMessage = "El correo es obligatorio.")]
     [EmailAddress(ErrorMessage = "Ingresa un correo valido.")]
     [StringLength(160)]
     public string Email { get; set; } = string.Empty;
+
+    [Display(Name = "Telefono")]
+    [Required(ErrorMessage = "El telefono es obligatorio.")]
+    [StringLength(30)]
+    public string Phone { get; set; } = string.Empty;
+
+    [Display(Name = "Direccion")]
+    [StringLength(240)]
+    public string? Address { get; set; }
 
     [Display(Name = "Contrasena")]
     [Required(ErrorMessage = "La contrasena es obligatoria.")]

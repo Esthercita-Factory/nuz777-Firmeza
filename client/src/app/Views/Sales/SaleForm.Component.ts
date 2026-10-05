@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
@@ -24,14 +24,24 @@ const IVA_RATE = 0.19;
     <div class="mx-auto max-w-4xl">
       <a routerLink="/ventas" class="text-sm font-bold text-blue-600 hover:text-blue-500">← Volver a ventas</a>
 
-      <h1 class="mt-4 text-3xl font-black text-slate-950">Registrar nueva venta</h1>
-      <p class="mt-1 text-slate-500">Selecciona el cliente y los productos. El recibo PDF se genera automáticamente.</p>
+      <h1 class="mt-4 text-3xl font-black text-slate-950">{{ isEdit() ? 'Editar venta' : 'Registrar nueva venta' }}</h1>
+      <p class="mt-1 text-slate-500">
+        @if (isEdit()) {
+          Se ajustan las lineas de {{ saleNumber() }}. El stock de los productos anteriores se devuelve y se descuenta el nuevo.
+        } @else {
+          Selecciona el cliente y los productos. El recibo PDF se genera automáticamente.
+        }
+      </p>
+
+      @if (loadError(); as message) {
+        <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">{{ message }}</div>
+      }
 
       @if (errorMessage(); as message) {
         <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">{{ message }}</div>
       }
 
-      <form class="mt-8 space-y-8" (ngSubmit)="onSubmit()">
+      <form class="mt-8 space-y-8" (ngSubmit)="onSubmit()" [class.opacity-60]="loadingSale()">
         <section class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
           <h2 class="text-base font-black text-slate-950">1. Datos del cliente</h2>
 
@@ -170,9 +180,9 @@ const IVA_RATE = 0.19;
           <button
             type="submit"
             class="rounded-xl bg-slate-950 px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-blue-500 hover:text-slate-950 disabled:opacity-60"
-            [disabled]="saving()"
+            [disabled]="saving() || loadingSale()"
           >
-            Registrar venta y generar recibo PDF
+            {{ isEdit() ? 'Guardar cambios' : 'Registrar venta y generar recibo PDF' }}
           </button>
         </div>
       </form>
@@ -180,6 +190,9 @@ const IVA_RATE = 0.19;
   `
 })
 export class SaleFormComponent implements OnInit {
+  /** Presente solo en modo edicion: /ventas/:id/editar */
+  readonly id = input<string>();
+
   private readonly customersService = inject(CustomersService);
   private readonly productsService = inject(ProductsService);
   private readonly salesService = inject(SalesService);
@@ -203,6 +216,13 @@ export class SaleFormComponent implements OnInit {
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly fieldErrors = signal<Record<string, string>>({});
+  protected readonly loadingSale = signal(false);
+  protected readonly loadError = signal<string | null>(null);
+  protected readonly saleNumber = signal<string>('');
+  /** Una venta entregada no se puede editar: el backend responde 409. */
+  protected readonly locked = signal(false);
+
+  protected readonly isEdit = computed(() => !!this.id());
 
   private nextKey = 1;
 
@@ -221,7 +241,38 @@ export class SaleFormComponent implements OnInit {
       error: (error) => this.errorMessage.set(toApiError(error).message)
     });
 
+    const id = this.id();
+    if (id) {
+      this.loadSale(id);
+      return;
+    }
+
     this.addLine();
+  }
+
+  private loadSale(id: string): void {
+    this.loadingSale.set(true);
+    this.salesService.getById(id).subscribe({
+      next: (sale) => {
+        this.loadingSale.set(false);
+        this.saleNumber.set(sale.saleNumber);
+        this.customerId = sale.customerId;
+        this.status = sale.status;
+        this.locked.set(sale.status === 'Delivered');
+        this.lines.set(
+          sale.lines.map((line) => ({
+            key: this.nextKey++,
+            productId: line.productId,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice
+          }))
+        );
+      },
+      error: (error) => {
+        this.loadingSale.set(false);
+        this.loadError.set(toApiError(error).message);
+      }
+    });
   }
 
   protected addLine(): void {
@@ -272,9 +323,16 @@ export class SaleFormComponent implements OnInit {
       unitPrice: line.unitPrice
     }));
 
-    this.salesService.create({ customerId: this.customerId, status: this.status, lines }).subscribe({
+    const request = { customerId: this.customerId, status: this.status, lines };
+    const id = this.id();
+
+    const guardado$ = id
+      ? this.salesService.update(id, request)
+      : this.salesService.create(request);
+
+    guardado$.subscribe({
       next: (sale) => {
-        this.toastService.success(`Venta ${sale.saleNumber} registrada.`);
+        this.toastService.success(id ? `Venta ${sale.saleNumber} actualizada.` : `Venta ${sale.saleNumber} registrada.`);
         this.importsService.download(this.salesService.receiptUrl(sale.id), `recibo_${sale.saleNumber}.pdf`).subscribe();
         this.router.navigate(['/ventas', sale.id]);
       },

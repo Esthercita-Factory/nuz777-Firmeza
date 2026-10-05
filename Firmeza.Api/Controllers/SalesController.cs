@@ -88,6 +88,23 @@ public sealed class SalesController : ControllerBase
         return File(bytes, "application/pdf", $"ventas_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
     }
 
+    /// <summary>Actualiza una venta existente: recalcula stock y totales.</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(SaleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SaleResponse>> Update(Guid id, [FromBody] SaleRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _sales.UpdateAsync(id, request, cancellationToken);
+        if (result.IsFailure)
+        {
+            return new ObjectResult(result);
+        }
+
+        return Ok(result);
+    }
+
     /// <summary>Borra una venta y restaura el stock de sus productos.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

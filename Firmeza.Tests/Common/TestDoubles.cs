@@ -44,6 +44,8 @@ public static class TestDoubles
 
     public static ICustomerRepository CustomerRepository() => Substitute.For<ICustomerRepository>();
 
+    public static ICustomerRequestRepository CustomerSignupRepository() => Substitute.For<ICustomerRequestRepository>();
+
     public static ISaleRepository SaleRepository() => Substitute.For<ISaleRepository>();
 
     public static ICurrentUserService CurrentUser(string? userId = "user-1")

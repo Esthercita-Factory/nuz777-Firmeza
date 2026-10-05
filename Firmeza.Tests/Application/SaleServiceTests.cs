@@ -267,6 +267,118 @@ public class SaleServiceTests
         _sales.DidNotReceive().Remove(Arg.Any<Sale>());
     }
 
+    [Fact]
+    public async Task UpdateAsync_ReturnsTheQuantityItHadConsumedToStock()
+    {
+        var product = Product(stock: 5); // 10 comprados menos 5 de esta venta
+        var sale = PendingSale((product.Id, 5));
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 8 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        // 5 + 5 devueltos - 8 nuevos = 2
+        Assert.Equal(2, product.Stock);
+        Assert.Equal(8, result.Value!.Lines.Single().Quantity);
+        Assert.Equal(80m, result.Value.Total);
+        Assert.True(_transaction.Committed);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RemovesLinesNoLongerPresent()
+    {
+        var cemento = Product(stock: 90);
+        var ladrillo = new Product { Id = Guid.NewGuid(), Sku = "LAD-004", Name = "Ladrillo", Price = 5m, Stock = 40, IsActive = true };
+        var sale = PendingSale((cemento.Id, 10), (ladrillo.Id, 8));
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([cemento, ladrillo]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = cemento.Id, Quantity = 4 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!.Lines);
+        // Cemento: 90 + 10 - 4 = 96. Ladrillo: se devuelve todo, 40 + 8 = 48.
+        Assert.Equal(96, cemento.Stock);
+        Assert.Equal(48, ladrillo.Stock);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsDeliveredSale()
+    {
+        var product = Product(stock: 5);
+        var sale = PendingSale((product.Id, 5));
+        sale.Status = SaleStatus.Delivered;
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 1 }]
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.Equal(5, product.Stock);
+        Assert.True(_transaction.RolledBack);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RollsBackWhenStockIsInsufficient()
+    {
+        var product = Product(stock: 2);
+        var sale = PendingSale((product.Id, 5));
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        // Se devuelven 5 (stock 7) y se piden 9: no alcanza.
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 9 }]
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.True(_transaction.RolledBack);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_KeepsCurrentStatusWhenRequestDoesNotSendOne()
+    {
+        var product = Product(stock: 5);
+        var sale = PendingSale((product.Id, 5));
+        sale.Status = SaleStatus.Confirmed;
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Status = null,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 2 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SaleStatus.Confirmed, result.Value!.Status);
+    }
+
     private Sale PendingSale(params (Guid ProductId, int Quantity)[] lines)
         => new()
         {

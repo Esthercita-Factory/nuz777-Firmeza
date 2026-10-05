@@ -55,6 +55,17 @@ public sealed class IdentityUserService : IUserService
         return OperationResult<UserAccount>.Success(ToAccount(user));
     }
 
+    public async Task DeleteAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return;
+        }
+
+        await _userManager.DeleteAsync(user);
+    }
+
     public async Task<SignInAttempt> SignInAsync(string email, string password, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);

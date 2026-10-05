@@ -84,6 +84,10 @@ export class SalesService {
     return this.http.post<Sale>(this.baseUrl, request);
   }
 
+  update(id: string, request: SaleRequest): Observable<Sale> {
+    return this.http.put<Sale>(`${this.baseUrl}/${id}`, request);
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

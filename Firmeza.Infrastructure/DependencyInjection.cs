@@ -42,6 +42,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICustomerRequestRepository, CustomerRequestRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IDashboardQuery, DashboardQuery>();

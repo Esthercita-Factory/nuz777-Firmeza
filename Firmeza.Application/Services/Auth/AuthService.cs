@@ -1,6 +1,8 @@
 using Firmeza.Application.Abstractions;
 using Firmeza.Application.Common;
 using Firmeza.Application.Dtos.Auth;
+using Firmeza.Domain.Entities;
+using Firmeza.Domain.Enums;
 using Firmeza.Domain.Identity;
 
 namespace Firmeza.Application.Services.Auth;
@@ -10,6 +12,8 @@ public sealed class AuthService : IAuthService
     private readonly IUserService _users;
     private readonly ITokenService _tokens;
     private readonly IRefreshTokenRepository _refreshTokens;
+    private readonly ICustomerRequestRepository _requests;
+    private readonly ICustomerRepository _customers;
     private readonly ICurrentUserService _currentUser;
     private readonly IClock _clock;
     private readonly IUnitOfWork _unitOfWork;
@@ -18,6 +22,8 @@ public sealed class AuthService : IAuthService
         IUserService users,
         ITokenService tokens,
         IRefreshTokenRepository refreshTokens,
+        ICustomerRequestRepository requests,
+        ICustomerRepository customers,
         ICurrentUserService currentUser,
         IClock clock,
         IUnitOfWork unitOfWork)
@@ -25,6 +31,8 @@ public sealed class AuthService : IAuthService
         _users = users;
         _tokens = tokens;
         _refreshTokens = refreshTokens;
+        _requests = requests;
+        _customers = customers;
         _currentUser = currentUser;
         _clock = clock;
         _unitOfWork = unitOfWork;
@@ -68,6 +76,38 @@ public sealed class AuthService : IAuthService
         {
             return Result.Failure<UserResponse>(Error.Validation(MapIdentityErrors(created.Errors)));
         }
+
+        var document = request.Document.Trim();
+
+        // El documento se valida contra clientes y contra solicitudes previas.
+        // Si el documento ya esta tomado se elimina la cuenta recien creada:
+        // el registro publico no debe dejar usuarios huerfanos.
+        var documentoTomado = await _customers.DocumentExistsAsync(document, null, cancellationToken)
+            || await _requests.DocumentExistsAsync(document, cancellationToken);
+
+        if (documentoTomado)
+        {
+            await _users.DeleteAsync(created.Value.Id, cancellationToken);
+            return Result.Failure<UserResponse>(Error.Validation(new Dictionary<string, string[]>
+            {
+                [nameof(request.Document)] = ["Ese documento ya esta registrado."]
+            }));
+        }
+
+        await _requests.AddAsync(new CustomerSignupRequest
+        {
+            UserId = created.Value.Id,
+            Document = document,
+            FullName = created.Value.FullName,
+            Age = request.Age,
+            Email = created.Value.Email,
+            Phone = request.Phone.Trim(),
+            Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim(),
+            Status = CustomerRequestStatus.Pending,
+            CreatedAt = _clock.UtcNow
+        }, cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new UserResponse(
             created.Value.Id,

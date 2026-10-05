@@ -86,24 +86,42 @@ import { SaleStatus, SaleSummary, SalesService } from '../../Services/sales.serv
                   </span>
                 </td>
                 <td class="px-6 py-4 text-right font-bold text-slate-900">{{ sale.total | currency: 'COP' }}</td>
-                <td class="px-6 py-4 text-right">
-                  <button type="button" class="mr-3 inline-flex items-center gap-1 font-bold text-rose-600 hover:text-rose-500" (click)="downloadReceipt(sale)">
-                    <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="h-3.5 w-3.5">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    Recibo PDF
-                  </button>
-                  <a [routerLink]="['/ventas', sale.id]" class="font-bold text-blue-600 hover:text-blue-500">Ver venta</a>
-                  <button
-                    type="button"
-                    class="ml-3 font-bold text-rose-500 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:text-slate-300"
-                    [disabled]="!canDelete(sale)"
-                    [title]="canDelete(sale) ? 'Eliminar venta' : 'No se puede eliminar una venta entregada'"
-                    (click)="remove(sale)"
-                  >
-                    Eliminar
-                  </button>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      title="Descargar recibo PDF"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                      (click)="downloadReceipt(sale)"
+                    >
+                      <app-icon name="receipt" [size]="16" label="Descargar recibo PDF" />
+                    </button>
+                    <a
+                      [routerLink]="['/ventas', sale.id]"
+                      title="Ver venta"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <app-icon name="eye" [size]="16" label="Ver venta" />
+                    </a>
+                    <a
+                      [routerLink]="['/ventas', sale.id, 'editar']"
+                      title="Editar venta"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 disabled:pointer-events-none disabled:opacity-30"
+                      [class.cursor-not-allowed]="!canEdit(sale)"
+                      [attr.aria-disabled]="!canEdit(sale)"
+                    >
+                      <app-icon name="pencil" [size]="16" label="Editar venta" />
+                    </a>
+                    <button
+                      type="button"
+                      title="Eliminar venta"
+                      class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-30"
+                      [disabled]="!canDelete(sale)"
+                      (click)="remove(sale)"
+                    >
+                      <app-icon name="trash" [size]="16" label="Eliminar venta" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -172,6 +190,10 @@ export class SalesComponent implements OnInit {
   }
 
   protected canDelete(sale: SaleSummary): boolean {
+    return sale.status !== 'Delivered';
+  }
+
+  protected canEdit(sale: SaleSummary): boolean {
     return sale.status !== 'Delivered';
   }
 

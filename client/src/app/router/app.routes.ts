@@ -10,6 +10,7 @@ import { ProductDetailComponent } from '../Views/Products/ProductDetail.Componen
 import { CustomersComponent } from '../Views/Customers/Customers.Component';
 import { CustomerFormComponent } from '../Views/Customers/CustomerForm.Component';
 import { CustomerDetailComponent } from '../Views/Customers/CustomerDetail.Component';
+import { CustomerRequestsComponent } from '../Views/Customers/CustomerRequests.Component';
 import { SalesComponent } from '../Views/Sales/Sales.Component';
 import { SaleFormComponent } from '../Views/Sales/SaleForm.Component';
 import { SaleDetailComponent } from '../Views/Sales/SaleDetail.Component';
@@ -38,9 +39,11 @@ export const routes: Routes = [
       { path: 'clientes/nuevo', component: CustomerFormComponent },
       { path: 'clientes/:id', component: CustomerDetailComponent },
       { path: 'clientes/:id/editar', component: CustomerFormComponent },
+      { path: 'solicitudes', component: CustomerRequestsComponent },
       { path: 'ventas', component: SalesComponent },
       { path: 'ventas/nueva', component: SaleFormComponent },
       { path: 'ventas/:id', component: SaleDetailComponent },
+      { path: 'ventas/:id/editar', component: SaleFormComponent },
       { path: 'carga-masiva', component: ImportsComponent }
     ]
   },

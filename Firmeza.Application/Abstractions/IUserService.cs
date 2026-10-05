@@ -38,6 +38,9 @@ public interface IUserService
 
     Task<OperationResult<UserAccount>> RegisterAsync(UserRegistration registration, string role, CancellationToken cancellationToken = default);
 
+    /// <summary>Elimina la cuenta. Se usa para no dejar usuarios huerfanos cuando el registro falla.</summary>
+    Task DeleteAsync(string userId, CancellationToken cancellationToken = default);
+
     Task<SignInAttempt> SignInAsync(string email, string password, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> GetRolesAsync(string userId, CancellationToken cancellationToken = default);

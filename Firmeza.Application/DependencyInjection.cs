@@ -1,6 +1,7 @@
 using Firmeza.Application.Abstractions;
 using Firmeza.Application.Services.Auth;
 using Firmeza.Application.Services.BulkImport;
+using Firmeza.Application.Services.CustomerRequests;
 using Firmeza.Application.Services.Customers;
 using Firmeza.Application.Services.Dashboard;
 using Firmeza.Application.Services.Exports;
@@ -17,6 +18,7 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ICustomerRequestService, CustomerRequestService>();
         services.AddScoped<ISaleService, SaleService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IAuthService, AuthService>();

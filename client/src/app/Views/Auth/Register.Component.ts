@@ -66,6 +66,29 @@ import { LogoComponent } from '../Layout/Shell.Component';
             }
 
             <form class="mt-8 space-y-5" (ngSubmit)="onSubmit()" novalidate>
+              <div class="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
+                <p class="text-xs leading-5 text-blue-900">
+                  Tu cuenta queda <strong>pendiente de aprobación</strong>. Un administrador revisará tus datos y al aprobar tu solicitud
+                  aparecerás en el listado de clientes de Firmeza.
+                </p>
+              </div>
+
+              <div>
+                <label for="document" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">Documento / NIT *</label>
+                <input
+                  id="document"
+                  name="document"
+                  autocomplete="off"
+                  placeholder="Cédula o NIT"
+                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  [(ngModel)]="document"
+                  required
+                />
+                @if (fieldError('document'); as message) {
+                  <p class="mt-1.5 text-xs text-rose-600">{{ message }}</p>
+                }
+              </div>
+
               <div>
                 <label for="fullName" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">Nombre completo</label>
                 <input
@@ -78,6 +101,57 @@ import { LogoComponent } from '../Layout/Shell.Component';
                   required
                 />
                 @if (fieldError('fullName'); as message) {
+                  <p class="mt-1.5 text-xs text-rose-600">{{ message }}</p>
+                }
+              </div>
+
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label for="phone" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">Teléfono *</label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autocomplete="tel"
+                    placeholder="300 000 0000"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    [(ngModel)]="phone"
+                    required
+                  />
+                  @if (fieldError('phone'); as message) {
+                    <p class="mt-1.5 text-xs text-rose-600">{{ message }}</p>
+                  }
+                </div>
+
+                <div>
+                  <label for="age" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">Edad *</label>
+                  <input
+                    id="age"
+                    name="age"
+                    type="number"
+                    min="18"
+                    max="120"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    [(ngModel)]="age"
+                    required
+                  />
+                  @if (fieldError('age'); as message) {
+                    <p class="mt-1.5 text-xs text-rose-600">{{ message }}</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <label for="address" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-600">Dirección</label>
+                <input
+                  id="address"
+                  name="address"
+                  autocomplete="street-address"
+                  placeholder="Opcional"
+                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  [(ngModel)]="address"
+                />
+                @if (fieldError('address'); as message) {
                   <p class="mt-1.5 text-xs text-rose-600">{{ message }}</p>
                 }
               </div>
@@ -172,7 +246,11 @@ export class RegisterComponent {
   ];
   protected readonly year = new Date().getFullYear();
 
+  protected document = '';
   protected fullName = '';
+  protected age = 18;
+  protected phone = '';
+  protected address = '';
   protected email = '';
   protected password = '';
   protected confirmPassword = '';
@@ -228,14 +306,18 @@ export class RegisterComponent {
 
     this.authService
       .register({
+        document: this.document.trim(),
         fullName: this.fullName.trim(),
+        age: this.age,
         email: this.email.trim(),
+        phone: this.phone.trim(),
+        address: this.address.trim() || null,
         password: this.password,
         confirmPassword: this.confirmPassword
       })
       .subscribe({
         next: () => {
-          this.toastService.success('Cuenta creada. Ya puedes iniciar sesión.');
+          this.toastService.success('Solicitud enviada. Un administrador la revisara para activar tu cuenta.');
           this.router.navigate(['/login']);
         },
         error: (error) => {

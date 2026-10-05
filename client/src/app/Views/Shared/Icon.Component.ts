@@ -15,7 +15,15 @@ const ICONS = {
     'M14 11v6'
   ],
   eye: ['M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'],
-  'arrow-left': ['M19 12H5', 'm12 19-7-7 7-7']
+  receipt: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M16 13H8', 'M16 17H8'],
+  'arrow-left': ['M19 12H5', 'm12 19-7-7 7-7'],
+  check: ['M20 6 9 17l-5-5'],
+  'user-plus': [
+    'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2',
+    'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+    'M19 8v6',
+    'M22 11h-6'
+  ]
 } as const;
 
 export type IconName = keyof typeof ICONS;

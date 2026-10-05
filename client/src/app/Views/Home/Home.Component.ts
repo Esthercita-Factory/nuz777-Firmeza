@@ -125,7 +125,7 @@ import { LogoComponent } from '../Layout/Shell.Component';
           <img
             src="img/Blackman.png"
             alt="Ilustración de Blackman"
-            class="block h-auto w-full max-w-[520px] scale-110 object-contain mix-blend-multiply lg:max-w-none lg:w-[145%] lg:max-h-[80vh] lg:translate-x-[8%]"
+            class="block h-auto w-full max-w-[560px] scale-110 object-contain mix-blend-multiply lg:max-w-none lg:w-[145%] lg:max-h-[100vh] lg:translate-x-[8%]"
           />
         </div>
       </div>

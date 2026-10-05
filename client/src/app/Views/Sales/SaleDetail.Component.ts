@@ -30,6 +30,16 @@ import { IconComponent } from '../Shared/Icon.Component';
         <div class="flex items-center justify-between">
           <a routerLink="/ventas" class="text-sm font-bold text-blue-600 hover:text-blue-500">← Volver a ventas</a>
           <div class="flex items-center gap-2">
+            <a
+              [routerLink]="['/ventas', current.id, 'editar']"
+              class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-500 disabled:pointer-events-none disabled:bg-slate-300"
+              [class.cursor-not-allowed]="current.status === 'Delivered'"
+              [attr.aria-disabled]="current.status === 'Delivered'"
+              [title]="current.status === 'Delivered' ? 'No se puede editar una venta entregada' : 'Editar venta'"
+            >
+              <app-icon name="pencil" [size]="14" />
+              Editar
+            </a>
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-300"
@@ -37,14 +47,16 @@ import { IconComponent } from '../Shared/Icon.Component';
               [title]="current.status === 'Delivered' ? 'No se puede eliminar una venta entregada' : 'Eliminar venta'"
               (click)="remove(current)"
             >
+              <app-icon name="trash" [size]="14" />
               Eliminar
             </button>
             <button
               type="button"
-              class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-500"
+              class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700"
               (click)="downloadReceipt()"
             >
-              Descargar recibo (PDF)
+              <app-icon name="receipt" [size]="14" />
+              Recibo PDF
             </button>
           </div>
         </div>

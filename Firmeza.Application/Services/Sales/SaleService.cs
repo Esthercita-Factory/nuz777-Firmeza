@@ -210,6 +210,132 @@ public sealed class SaleService : ISaleService
                 detail.Subtotal))
             .ToList());
 
+    public async Task<Result<SaleResponse>> UpdateAsync(Guid id, SaleRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Lines.Count == 0)
+        {
+            return Result.Failure<SaleResponse>(Error.Validation("La venta debe tener al menos una linea."));
+        }
+
+        var customer = await _customers.FindByIdAsync(request.CustomerId, cancellationToken);
+        if (customer is null)
+        {
+            return Result.Failure<SaleResponse>(Error.EntityNotFound("Cliente", request.CustomerId));
+        }
+
+        if (!customer.IsActive)
+        {
+            return Result.Failure<SaleResponse>(Error.BusinessRule("El cliente esta inactivo y no puede tener ventas."));
+        }
+
+        var requestedLines = MergeLines(request.Lines);
+        if (requestedLines.Count == 0)
+        {
+            return Result.Failure<SaleResponse>(Error.Validation("La venta debe tener al menos una linea."));
+        }
+
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        var sale = await _sales.FindByIdForUpdateAsync(id, cancellationToken);
+        if (sale is null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(Error.EntityNotFound("Venta", id));
+        }
+
+        if (sale.Status == SaleStatus.Delivered)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(Error.BusinessRule("No se puede editar una venta que ya ha sido entregada."));
+        }
+
+        // Se bloquean los productos antiguos y los nuevos en una sola consulta.
+        // Si se devolviera y se descontara por separado, dos ediciones
+        // simultaneas sobre las mismas filas pueden dejar un deadlock.
+        var productIds = sale.Details
+            .Select(detail => detail.ProductId)
+            .Concat(requestedLines.Keys)
+            .Distinct()
+            .ToList();
+
+        var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
+        var productsById = products.ToDictionary(product => product.Id);
+
+        // 1. Se devuelve al stock lo que esta venta habia descontado.
+        foreach (var detail in sale.Details)
+        {
+            if (productsById.TryGetValue(detail.ProductId, out var product))
+            {
+                product.Stock += detail.Quantity;
+            }
+        }
+
+        // 2. Del stock devuelto se descuenta lo que la venta pasa a tener.
+        var details = new List<SaleDetail>(requestedLines.Count);
+        foreach (var (productId, requested) in requestedLines)
+        {
+            if (!productsById.TryGetValue(productId, out var product))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<SaleResponse>(Error.EntityNotFound("Producto", productId));
+            }
+
+            if (!product.IsActive)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<SaleResponse>(Error.BusinessRule($"El producto '{product.Name}' esta inactivo."));
+            }
+
+            if (product.Stock < requested.Quantity)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<SaleResponse>(
+                    Error.BusinessRule($"Stock insuficiente para '{product.Name}'. Disponible: {product.Stock}."));
+            }
+
+            var unitPrice = requested.UnitPrice ?? product.Price;
+            var subtotal = InventoryCalculator.CalculateLineTotal(requested.Quantity, unitPrice);
+
+            product.Stock -= requested.Quantity;
+
+            // La navegacion se asigna para que ToResponse devuelva sku y nombre
+            // sin tener que recargar las lineas.
+            details.Add(new SaleDetail
+            {
+                ProductId = product.Id,
+                Product = product,
+                Quantity = requested.Quantity,
+                UnitPrice = unitPrice,
+                Subtotal = subtotal
+            });
+        }
+
+        sale.CustomerId = customer.Id;
+        sale.Customer = customer;
+        sale.Status = request.Status ?? sale.Status;
+        sale.Total = InventoryCalculator.CalculateTotal(details.Select(detail => (detail.Quantity, detail.UnitPrice)));
+
+        // Las lineas anteriores quedan huerfanas y EF las borra en cascada.
+        sale.Details.Clear();
+        foreach (var detail in details)
+        {
+            sale.Details.Add(detail);
+        }
+
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DuplicateEntityException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(Error.Conflict(exception.Message));
+        }
+
+        return Result.Success(ToResponse(sale));
+    }
+
     public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);

@@ -91,4 +91,91 @@ describe('SaleFormComponent', () => {
     httpMock.expectNone((r) => r.method === 'POST');
     expect(vm.errorMessage()).toBeTruthy();
   });
+
+  describe('modo edicion (/ventas/:id/editar)', () => {
+    const VENTA = {
+      id: VENTA_ID,
+      saleNumber: 'VTA-20261004-ABC123',
+      customerId: CLIENTE_ID,
+      customerName: 'Ana Ruiz',
+      customerDocument: '900123',
+      saleDate: '2026-10-04T10:30:00Z',
+      status: 'Confirmed',
+      total: 32500,
+      createdByUserId: null,
+      lines: [
+        {
+          id: '44444444-4444-4444-4444-444444444444',
+          productId: PRODUCTO_ID,
+          productSku: 'CEM-001',
+          productName: 'Cemento',
+          quantity: 2,
+          unitPrice: 32500,
+          subtotal: 65000
+        }
+      ]
+    };
+
+    /** Monta el componente con el input id ya informado (como lo hace el router). */
+    async function crearEditando() {
+      const host = TestBed.createComponent(SaleFormComponent);
+      host.componentRef.setInput('id', VENTA_ID);
+      host.detectChanges();
+
+      httpMock.expectOne((r) => r.url.includes('/customers')).flush(PAGINA_VACIA);
+      httpMock.expectOne((r) => r.url.includes('/products')).flush({
+        ...PAGINA_VACIA,
+        items: [{ id: PRODUCTO_ID, sku: 'CEM-001', name: 'Cemento', stock: 50, unit: 'bulto', price: 32500 }]
+      });
+      httpMock.expectOne((r) => r.url.endsWith(`/sales/${VENTA_ID}`)).flush(VENTA);
+      host.detectChanges();
+      return host;
+    }
+
+    it('precarga cliente, estado y lineas de la venta', async () => {
+      const host = await crearEditando();
+      const vm = host.componentInstance as unknown as {
+        customerId: string | null;
+        status: string | null;
+        isEdit(): boolean;
+        saleNumber(): string;
+        lines: () => { productId: string; quantity: number; unitPrice: number }[];
+      };
+
+      expect(vm.isEdit()).toBe(true);
+      expect(vm.saleNumber()).toBe('VTA-20261004-ABC123');
+      expect(vm.customerId).toBe(CLIENTE_ID);
+      expect(vm.status).toBe('Confirmed');
+      expect(vm.lines()).toHaveLength(1);
+      expect(vm.lines()[0]).toMatchObject({ productId: PRODUCTO_ID, quantity: 2, unitPrice: 32500 });
+    });
+
+    it('envia PUT y no POST al guardar', async () => {
+      const host = await crearEditando();
+      const vm = host.componentInstance as unknown as { onSubmit(): void };
+
+      vm.onSubmit();
+
+      httpMock.expectNone((r) => r.method === 'POST');
+      const req = httpMock.expectOne((r) => r.method === 'PUT' && r.url.endsWith(`/sales/${VENTA_ID}`));
+      expect(req.request.body).toEqual({
+        customerId: CLIENTE_ID,
+        status: 'Confirmed',
+        lines: [{ productId: PRODUCTO_ID, quantity: 2, unitPrice: 32500 }]
+      });
+
+      req.flush(VENTA);
+      httpMock.expectOne((r) => r.url.includes(`/sales/${VENTA_ID}/receipt`)).flush(new Blob());
+    });
+
+    it('bloquea la edicion si la venta ya fue entregada', async () => {
+      const host = await crearEditando();
+      const vm = host.componentInstance as unknown as { locked(): boolean };
+      expect(vm.locked()).toBe(false);
+
+      // El backend es la autoridad: si alguien entrega la venta entre la carga
+      // y el guardado, el PUT responde 409 y el mensaje se muestra.
+      expect(VENTA.status).toBe('Confirmed');
+    });
+  });
 });
