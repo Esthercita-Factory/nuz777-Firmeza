@@ -19,6 +19,9 @@ public interface ICustomerRepository
 
     Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default);
 
+    /// <summary>Busca el cliente asociado a una cuenta de Identity.</summary>
+    Task<Customer?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default);
 
     Task AddAsync(Customer customer, CancellationToken cancellationToken = default);

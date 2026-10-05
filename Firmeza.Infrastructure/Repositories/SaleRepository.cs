@@ -30,6 +30,11 @@ public sealed class SaleRepository : ISaleRepository
             query = query.Where(sale => sale.Status == filter.Status);
         }
 
+        if (filter.CustomerId is not null)
+        {
+            query = query.Where(sale => sale.CustomerId == filter.CustomerId.Value);
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
             .OrderByDescending(sale => sale.SaleDate)

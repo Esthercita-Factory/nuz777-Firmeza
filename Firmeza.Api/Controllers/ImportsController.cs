@@ -1,12 +1,14 @@
 using Firmeza.Application.Services.BulkImport;
+using Firmeza.Domain.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Firmeza.Api.Controllers;
 
+/// <summary>Carga masiva de datos. Solo Administrador.</summary>
 [ApiController]
 [Route("api/imports")]
-[Authorize]
+[Authorize(Roles = ApplicationRoles.Administrator)]
 public sealed class ImportsController : ControllerBase
 {
     private readonly IBulkImportService _bulkImportService;

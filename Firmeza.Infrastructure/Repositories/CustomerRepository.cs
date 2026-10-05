@@ -44,6 +44,9 @@ public sealed class CustomerRepository : ICustomerRepository
     public Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default)
         => _db.Customers.FirstOrDefaultAsync(customer => customer.Document == document.Trim(), cancellationToken);
 
+    public Task<Customer?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+        => _db.Customers.AsNoTracking().FirstOrDefaultAsync(customer => customer.Email == email.Trim().ToLowerInvariant(), cancellationToken);
+
     public async Task<IReadOnlyList<Customer>> GetAllAsync(CancellationToken cancellationToken = default)
         => await _db.Customers.AsNoTracking().OrderBy(c => c.FullName).ToListAsync(cancellationToken);
 

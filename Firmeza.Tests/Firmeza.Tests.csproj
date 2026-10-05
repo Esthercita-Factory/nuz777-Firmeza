@@ -27,6 +27,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Firmeza.Application\Firmeza.Application.csproj" />
     <ProjectReference Include="..\Firmeza.Domain\Firmeza.Domain.csproj" />
+    <!-- Necesario para poder inspeccionar los [Authorize] de los controllers: sin
+         esta referencia, un test no puede afirmar que un endpoint siga restringido. -->
+    <ProjectReference Include="..\Firmeza.Api\Firmeza.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,11 @@ using Firmeza.Domain.Enums;
 
 namespace Firmeza.Application.Abstractions;
 
-public sealed record SaleFilter(string? Term, SaleStatus? Status);
+/// <param name="CustomerId">
+/// Cuando viene informado, limita el listado a las ventas de ese cliente. Lo usa
+/// el portal del cliente para que no vea operaciones de otros.
+/// </param>
+public sealed record SaleFilter(string? Term, SaleStatus? Status, Guid? CustomerId = null);
 
 public interface ISaleRepository
 {

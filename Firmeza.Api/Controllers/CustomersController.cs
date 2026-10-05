@@ -2,14 +2,19 @@ using Firmeza.Api.Infrastructure;
 using Firmeza.Application.Common;
 using Firmeza.Application.Dtos.Customers;
 using Firmeza.Application.Services.Customers;
+using Firmeza.Domain.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Firmeza.Api.Controllers;
 
+/// <summary>
+/// Directorio de clientes. Solo Administrador: un Cliente no debe poder ver ni
+/// modificar la cartera de otros clientes.
+/// </summary>
 [ApiController]
 [Route("api/customers")]
-[Authorize]
+[Authorize(Roles = ApplicationRoles.Administrator)]
 public sealed class CustomersController : ControllerBase
 {
     private readonly ICustomerService _customers;
