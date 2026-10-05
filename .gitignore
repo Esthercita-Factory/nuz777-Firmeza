@@ -35,7 +35,8 @@ postgres-data/
 Thumbs.db
 # Build del cliente Angular. El bundle y los assets se generan, no se versionan:
 # la fuente real vive en client/public y client/src.
-# Ojo: antes el patron era "wwwroot/*" con un !.gitkeep, y eso no excluia los
-# subdirectorios (img/), por lo que las imagenes quedaban duplicadas en git.
+# Nota: las imagenes de wwwroot/img estuvieron versionadas porque se agregaron
+# antes de que existiera esta regla, y .gitignore no desversiona lo ya rastreado.
+# Se sacaron con git rm --cached.
 client/dist/
 Firmeza.Web/wwwroot/
