@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Firmeza.Web</RootNamespace>
+    </PropertyGroup>
+
+    <Target Name="BuildAngularClient" BeforeTargets="Build" Condition="'$(SkipFrontendBuild)' != 'true' AND Exists('$(MSBuildProjectDirectory)/../../client/node_modules')">
+        <Exec Command="npm run build:publish" WorkingDirectory="$(MSBuildProjectDirectory)/../../client" />
+    </Target>
+
+    <Target Name="WarnMissingAngularClient" BeforeTargets="Build" Condition="'$(SkipFrontendBuild)' != 'true' AND !Exists('$(MSBuildProjectDirectory)/../../client/node_modules')">
+        <Warning Text="client/node_modules no existe: el host se compila sin el cliente Angular. Ejecuta 'npm ci' en client/." />
+    </Target>
+
+</Project>
