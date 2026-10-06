@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Web", "Firmeza.Web\Firmeza.Web.csproj", "{C2FA57FD-52BB-4ED4-846D-593C06449CFC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Web", "src/Firmeza.Web\Firmeza.Web.csproj", "{C2FA57FD-52BB-4ED4-846D-593C06449CFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Domain", "Firmeza.Domain\Firmeza.Domain.csproj", "{7ED91225-99C2-47E6-BDAF-69A002B16F91}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Domain", "src/Firmeza.Domain\Firmeza.Domain.csproj", "{7ED91225-99C2-47E6-BDAF-69A002B16F91}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Application", "Firmeza.Application\Firmeza.Application.csproj", "{0C56F1F3-477D-4119-AF7B-1DBBD25247B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Application", "src/Firmeza.Application\Firmeza.Application.csproj", "{0C56F1F3-477D-4119-AF7B-1DBBD25247B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Infrastructure", "Firmeza.Infrastructure\Firmeza.Infrastructure.csproj", "{4258C2FE-3C0E-4A9E-A9F6-D7C03A213C4F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Infrastructure", "src/Firmeza.Infrastructure\Firmeza.Infrastructure.csproj", "{4258C2FE-3C0E-4A9E-A9F6-D7C03A213C4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Api", "Firmeza.Api\Firmeza.Api.csproj", "{74C30C6C-9F70-4DD2-BE9B-12E4A33C6944}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Api", "src/Firmeza.Api\Firmeza.Api.csproj", "{74C30C6C-9F70-4DD2-BE9B-12E4A33C6944}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Tests", "Firmeza.Tests\Firmeza.Tests.csproj", "{B27D8AF9-8408-4245-81BC-88FED6837635}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Firmeza.Tests", "src/Firmeza.Tests\Firmeza.Tests.csproj", "{B27D8AF9-8408-4245-81BC-88FED6837635}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
