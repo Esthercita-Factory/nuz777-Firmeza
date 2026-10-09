@@ -49,7 +49,9 @@ public sealed record SaleSummaryResponse(
     DateTimeOffset SaleDate,
     SaleStatus Status,
     decimal Total,
-    int LineCount);
+    int LineCount,
+    string? DecisionNote,
+    DateTimeOffset? DecidedAt);
 
 public sealed record SaleLineResponse(
     Guid Id,
@@ -78,7 +80,9 @@ public sealed record SaleResponse(
     decimal Total,
     SaleTaxesResponse Taxes,
     string? CreatedByUserId,
-    IReadOnlyList<SaleLineResponse> Lines);
+    IReadOnlyList<SaleLineResponse> Lines,
+    string? DecisionNote,
+    DateTimeOffset? DecidedAt);
 
 /// <summary>Cambio de estado de una venta. Solo el administrador lo puede pedir.</summary>
 public sealed class UpdateSaleStatusRequest
@@ -86,6 +90,14 @@ public sealed class UpdateSaleStatusRequest
     [Display(Name = "Estado")]
     [Required(ErrorMessage = "El estado es obligatorio.")]
     public SaleStatus Status { get; set; }
+
+    /// <summary>
+    /// Motivo de la decision. Obligatorio al cancelar: el cliente necesita saber
+    /// por que se rechazo su solicitud. Opcional al confirmar o entregar.
+    /// </summary>
+    [Display(Name = "Motivo")]
+    [StringLength(500, ErrorMessage = "El motivo no puede superar los 500 caracteres.")]
+    public string? Note { get; set; }
 }
 
 public sealed record SaleQuery

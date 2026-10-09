@@ -7,7 +7,10 @@ public sealed record DashboardResponse(
     int ActiveCustomerCount,
     int SaleCount,
     decimal SalesTotal,
-    IReadOnlyList<RecentSaleResponse> RecentSales);
+    IReadOnlyList<RecentSaleResponse> RecentSales,
+    int PendingSaleCount,
+    IReadOnlyList<SalesStatusDistributionResponse> StatusDistribution,
+    IReadOnlyList<SalesTrendPointResponse> Trend);
 
 public sealed record RecentSaleResponse(
     Guid Id,
@@ -16,3 +19,14 @@ public sealed record RecentSaleResponse(
     DateTimeOffset SaleDate,
     decimal Total,
     SaleStatus Status);
+
+public sealed record SalesStatusDistributionResponse(
+    SaleStatus Status,
+    int Count,
+    decimal Total);
+
+public sealed record SalesTrendPointResponse(
+    string Date,
+    string Label,
+    decimal Total,
+    int Count);

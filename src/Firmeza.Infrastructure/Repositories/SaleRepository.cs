@@ -64,7 +64,9 @@ public sealed class SaleRepository : ISaleRepository
     {
         var sale = await _db.Sales
             .FromSqlInterpolated($"SELECT * FROM sales WHERE \"Id\" = {id} FOR UPDATE")
+            .Include(item => item.Customer)
             .Include(item => item.Details)
+            .ThenInclude(detail => detail.Product)
             .FirstOrDefaultAsync(cancellationToken);
 
         return sale;

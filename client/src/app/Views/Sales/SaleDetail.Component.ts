@@ -5,7 +5,9 @@ import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { Sale, SaleStatus, SalesService } from '../../Services/sales.service';
+import { SaleDecisionService } from '../../Services/sale-decision.service';
 import { AuthService } from '../../Services/auth.service';
+import { AdminNotificationService } from '../../Services/admin-notification.service';
 import { IconComponent } from '../Shared/Icon.Component';
 
 @Component({
@@ -33,21 +35,10 @@ import { IconComponent } from '../Shared/Icon.Component';
             [routerLink]="authService.isAdministrator() ? '/ventas' : '/mis-compras'"
             class="text-sm font-bold text-blue-600 hover:text-blue-500"
           >
-            ← {{ authService.isAdministrator() ? 'Volver a ventas' : 'Volver a mis compras' }}
+            ← {{ authService.isAdministrator() ? 'Volver a ventas' : 'Mis compras' }}
           </a>
           <div class="flex flex-wrap items-center gap-2">
             @if (authService.isAdministrator()) {
-              @for (next of nextStatuses(current.status); track next) {
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm transition"
-                  [class]="next === 'Delivered' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'"
-                  (click)="changeStatus(current, next)"
-                >
-                  {{ statusActionLabel(next) }}
-                </button>
-              }
-
               <a
                 [routerLink]="['/ventas', current.id, 'editar']"
                 class="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:pointer-events-none disabled:bg-slate-300"
@@ -60,7 +51,7 @@ import { IconComponent } from '../Shared/Icon.Component';
               </a>
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-rose-100 hover:text-rose-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 [disabled]="current.status === 'Delivered'"
                 [title]="current.status === 'Delivered' ? 'No se puede eliminar una venta entregada' : 'Eliminar venta'"
                 (click)="remove(current)"
@@ -82,7 +73,7 @@ import { IconComponent } from '../Shared/Icon.Component';
 
         <div class="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-blue-600">Comprobante de venta</p>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-blue-600">Comprobante de compra</p>
             <h1 class="mt-1 text-3xl font-black text-slate-950">{{ current.saleNumber }}</h1>
             <p class="mt-1 text-slate-500">{{ current.customerName }} · {{ current.saleDate | date: 'dd/MM/yyyy HH:mm' }}</p>
           </div>
@@ -91,6 +82,25 @@ import { IconComponent } from '../Shared/Icon.Component';
             {{ salesService.statusLabel(current.status) }}
           </span>
         </div>
+
+        @if (current.decisionNote) {
+          <div
+            class="mt-4 rounded-2xl border px-6 py-5"
+            [class]="current.status === 'Cancelled'
+              ? 'border-rose-200 bg-rose-50'
+              : 'border-emerald-200 bg-emerald-50'"
+          >
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-500">
+              Motivo del administrador
+              @if (current.decidedAt) {
+                <span class="ml-1 font-semibold normal-case tracking-normal text-slate-400">
+                  · {{ current.decidedAt | date: 'dd/MM/yyyy HH:mm' }}
+                </span>
+              }
+            </h3>
+            <p class="mt-2 text-sm leading-6 text-slate-700">{{ current.decisionNote }}</p>
+          </div>
+        }
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
           <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Información del cliente</h3>
@@ -128,6 +138,11 @@ import { IconComponent } from '../Shared/Icon.Component';
                     <td class="px-6 py-4 text-right font-bold text-slate-900">{{ line.subtotal | currency: 'COP' }}</td>
                   </tr>
                 }
+                @empty {
+                  <tr>
+                    <td colspan="5" class="px-6 py-14 text-center text-slate-500">No hay items registrados.</td>
+                  </tr>
+                }
               </tbody>
               <tfoot class="border-t border-slate-200 bg-slate-50/50">
                 <tr>
@@ -148,6 +163,78 @@ import { IconComponent } from '../Shared/Icon.Component';
             </table>
           </div>
         </div>
+
+        @if (authService.isAdministrator() && current.status === 'Pending') {
+          <div class="mt-8 rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-6 shadow-sm">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-lg font-black text-white shadow-sm">
+                  !
+                </span>
+                <div>
+                  <h4 class="text-sm font-black text-slate-950">Resolución de la solicitud</h4>
+                  <p class="mt-1 text-xs text-slate-600">
+                    Esta solicitud está pendiente de tu aprobación. Revisa los items y el total antes de decidir.
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-500 active:scale-95"
+                  (click)="changeStatus(current, 'Cancelled')"
+                >
+                  <app-icon name="trash" [size]="15" />
+                  Cancelar solicitud
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 active:scale-95"
+                  (click)="changeStatus(current, 'Confirmed')"
+                >
+                  <app-icon name="check" [size]="15" />
+                  Aprobar solicitud
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (authService.isAdministrator() && current.status === 'Confirmed') {
+          <div class="mt-8 rounded-2xl border border-sky-200 bg-sky-50/60 p-6 shadow-sm">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-black text-white shadow-sm">
+                  ✓
+                </span>
+                <div>
+                  <h4 class="text-sm font-black text-slate-950">Solicitud aprobada · En alistamiento</h4>
+                  <p class="mt-1 text-xs text-slate-600">
+                    El inventario ya fue descontado. Una vez entregados los materiales, márcala como entregada para completar la venta.
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-500 active:scale-95"
+                  (click)="changeStatus(current, 'Cancelled')"
+                >
+                  <app-icon name="trash" [size]="15" />
+                  Cancelar solicitud
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 active:scale-95"
+                  (click)="changeStatus(current, 'Delivered')"
+                >
+                  <app-icon name="check" [size]="15" />
+                  Marcar entregado
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       }
     </div>
   `
@@ -157,8 +244,10 @@ export class SaleDetailComponent implements OnInit {
 
   protected readonly salesService = inject(SalesService);
   protected readonly authService = inject(AuthService);
+  private readonly notificationService = inject(AdminNotificationService);
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
+  private readonly decisionService = inject(SaleDecisionService);
   private readonly confirmService = inject(ConfirmService);
   private readonly router = inject(Router);
 
@@ -189,29 +278,54 @@ export class SaleDetailComponent implements OnInit {
   protected statusActionLabel(status: SaleStatus): string {
     switch (status) {
       case 'Confirmed':
-        return 'Confirmar solicitud';
+        return 'Aprobar solicitud';
       case 'Delivered':
         return 'Marcar entregado';
       case 'Cancelled':
-        return 'Cancelar';
+        return 'Cancelar solicitud';
       default:
         return this.salesService.statusLabel(status);
     }
   }
 
+  /**
+   * Abre el modal de decision y aplica el cambio con el motivo que escribio el
+   * administrador. Al cancelar el motivo es obligatorio, porque es lo unico
+   * que le explica al cliente por que no se le aprobo la compra.
+   */
   protected async changeStatus(sale: Sale, status: SaleStatus): Promise<void> {
-    const confirmed = await this.confirmService.confirm({
-      title: this.statusActionLabel(status),
-      message: `¿Pasar la venta ${sale.saleNumber} a "${this.salesService.statusLabel(status)}"?`,
-      confirmLabel: this.statusActionLabel(status),
-      tone: status === 'Cancelled' ? 'danger' : 'default'
-    });
-    if (!confirmed) return;
+    const cancelling = status === 'Cancelled';
 
-    this.salesService.changeStatus(sale.id, status).subscribe({
+    const message = cancelling
+      ? `Vas a cancelar la solicitud ${sale.saleNumber} de ${sale.customerName}. El stock vuelve al inventario y el cliente recibe tu motivo.`
+      : status === 'Delivered'
+        ? `Vas a marcar como entregada la solicitud ${sale.saleNumber} de ${sale.customerName}. A partir de aqui ya no se puede editar.`
+        : `Vas a aprobar la solicitud ${sale.saleNumber} de ${sale.customerName}. Se descontara el stock y el cliente vera tu comentario.`;
+
+    const answer = await this.decisionService.askDecision({
+      title: this.statusActionLabel(status),
+      message,
+      confirmLabel: this.statusActionLabel(status),
+      requireNote: cancelling,
+      notePlaceholder: cancelling
+        ? 'Ej: no hay stock disponible del cemento gris.'
+        : 'Ej: todo disponible, entregamos manana.',
+      tone: cancelling ? 'danger' : 'default'
+    });
+
+    // El admin cerro el modal sin decidir: no se toca la venta.
+    if (!answer.confirmed) return;
+
+    this.salesService.changeStatus(sale.id, status, answer.note || null).subscribe({
       next: (updated) => {
         this.sale.set(updated);
-        this.toastService.success(`Venta ${updated.saleNumber}: ${this.salesService.statusLabel(updated.status)}.`);
+        this.notificationService.refresh();
+        AdminNotificationService.broadcastStockChanged(updated.saleNumber, updated.status);
+        this.toastService.success(
+          cancelling
+            ? `Solicitud ${updated.saleNumber} cancelada. El cliente ya puede ver el motivo.`
+            : `Solicitud ${updated.saleNumber}: ${this.salesService.statusLabel(updated.status)}.`
+        );
       },
       error: (error) => this.toastService.error(toApiError(error).message)
     });
@@ -237,12 +351,13 @@ export class SaleDetailComponent implements OnInit {
   protected async remove(sale: Sale): Promise<void> {
     const confirmed = await this.confirmService.confirm({
       title: 'Eliminar venta',
-      message: `¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolvera el stock de sus productos y esta accion no se puede deshacer.`
+      message: `¿Eliminar la venta ${sale.saleNumber} de ${sale.customerName}? Se devolverá el stock de sus productos y esta acción no se puede deshacer.`
     });
     if (!confirmed) return;
 
     this.salesService.delete(sale.id).subscribe({
       next: () => {
+        this.notificationService.refresh();
         this.toastService.success('Venta eliminada.');
         this.router.navigate(['/ventas']);
       },

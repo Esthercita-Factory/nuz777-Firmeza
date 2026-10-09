@@ -6,6 +6,7 @@ import { CartService } from '../../Services/cart.service';
 import { Sale, SalesService } from '../../Services/sales.service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ToastService } from '../../Services/imports.service';
+import { AdminNotificationService } from '../../Services/admin-notification.service';
 import { IconComponent } from '../Shared/Icon.Component';
 
 /**
@@ -214,6 +215,7 @@ export class CheckoutComponent {
       next: (sale) => {
         this.saving.set(false);
         this.cart.clear();
+        AdminNotificationService.broadcastNewSale(sale.saleNumber);
         this.toastService.success(`Solicitud ${sale.saleNumber} enviada. Queda pendiente de confirmacion.`);
         this.router.navigate(['/mis-compras']);
       },

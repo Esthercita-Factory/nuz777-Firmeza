@@ -1,12 +1,14 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { IconComponent } from '../Shared/Icon.Component';
 import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { SaleStatus, SaleSummary, SalesService } from '../../Services/sales.service';
+import { AdminNotificationService } from '../../Services/admin-notification.service';
 
 @Component({
   selector: 'app-sales',
@@ -75,13 +77,28 @@ import { SaleStatus, SaleSummary, SalesService } from '../../Services/sales.serv
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (sale of sales(); track sale.id) {
-              <tr class="hover:bg-blue-50/40">
-                <td class="px-6 py-4 font-bold text-slate-900">{{ sale.saleNumber }}</td>
+              <tr
+                class="transition border-l-4"
+                [class]="sale.status === 'Pending'
+                  ? 'border-l-amber-500 bg-amber-50/60 hover:bg-amber-100/60 font-medium'
+                  : 'border-l-transparent hover:bg-blue-50/40'"
+              >
+                <td class="px-6 py-4 font-bold text-slate-900">
+                  <div class="flex items-center gap-2">
+                    <span>{{ sale.saleNumber }}</span>
+                    @if (sale.status === 'Pending') {
+                      <span class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800 ring-1 ring-amber-300">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Pendiente
+                      </span>
+                    }
+                  </div>
+                </td>
                 <td class="px-6 py-4 text-slate-600">{{ sale.customerName }}</td>
                 <td class="px-6 py-4 text-slate-500">{{ sale.saleDate | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td class="px-6 py-4">
                   <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ring-1" [class]="salesService.statusClass(sale.status)">
-                    <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                    <span class="h-1.5 w-1.5 rounded-full bg-current" [class.animate-pulse]="sale.status === 'Pending'" aria-hidden="true"></span>
                     {{ salesService.statusLabel(sale.status) }}
                   </span>
                 </td>
@@ -154,6 +171,8 @@ export class SalesComponent implements OnInit {
   private readonly importsService = inject(ImportsService);
   private readonly toastService = inject(ToastService);
   private readonly confirmService = inject(ConfirmService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly notificationService = inject(AdminNotificationService);
 
   protected readonly statusOptions: { value: SaleStatus; label: string }[] = [
     { value: 'Pending', label: 'Pendiente' },
@@ -170,7 +189,27 @@ export class SalesComponent implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly errorMessage = signal<string | null>(null);
 
+  private alertSubscription?: Subscription;
+
   ngOnInit(): void {
+    const statusParam = this.route.snapshot.queryParamMap.get('status') as SaleStatus | null;
+    if (statusParam && this.statusOptions.some((opt) => opt.value === statusParam)) {
+      this.status.set(statusParam);
+    }
+    this.notificationService.markSeen();
+    this.load();
+
+    this.alertSubscription = this.notificationService.newSaleAlert$.subscribe(() => {
+      this.load();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.alertSubscription?.unsubscribe();
+  }
+
+  @HostListener('window:focus')
+  onWindowFocus(): void {
     this.load();
   }
 
@@ -211,6 +250,8 @@ export class SalesComponent implements OnInit {
 
     this.salesService.delete(sale.id).subscribe({
       next: () => {
+        this.notificationService.refresh();
+        AdminNotificationService.broadcastStockChanged(sale.saleNumber, 'Deleted');
         this.toastService.success('Venta eliminada.');
         this.load();
       },

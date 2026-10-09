@@ -35,6 +35,13 @@ public sealed class DashboardService : IDashboardService
                     sale.SaleDate,
                     sale.Total,
                     sale.Status))
+                .ToList(),
+            snapshot.PendingSaleCount,
+            snapshot.StatusDistribution
+                .Select(sd => new SalesStatusDistributionResponse(sd.Status, sd.Count, sd.Total))
+                .ToList(),
+            snapshot.Trend
+                .Select(t => new SalesTrendPointResponse(t.Date, t.Label, t.Total, t.Count))
                 .ToList()));
     }
 }

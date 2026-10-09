@@ -121,6 +121,8 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.userKey);
+    sessionStorage.removeItem('admin_login_alert_shown');
+    sessionStorage.removeItem('admin_last_seen_pending_sales');
     this.currentUser.set(null);
 
     if (redirectToLogin) {

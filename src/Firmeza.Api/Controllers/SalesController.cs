@@ -254,7 +254,13 @@ public sealed class SalesController : ControllerBase
             return this.IsAdministrator() ? NotFound() : this.Forbidden("La venta no pertenece a tu cuenta.");
         }
 
-        var result = await _sales.ChangeStatusAsync(id, SaleStatus.Cancelled, cancellationToken);
+        // Quien cancela desde el portal es el propio cliente: no escribe un motivo,
+        // asi que se deja uno por defecto para que el administrador vea el motivo.
+        var result = await _sales.ChangeStatusAsync(
+            id,
+            SaleStatus.Cancelled,
+            "Cancelada por el cliente desde el portal.",
+            cancellationToken);
         if (result.IsFailure)
         {
             return new ObjectResult(result);
@@ -277,7 +283,7 @@ public sealed class SalesController : ControllerBase
         [FromBody] UpdateSaleStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _sales.ChangeStatusAsync(id, request.Status, cancellationToken);
+        var result = await _sales.ChangeStatusAsync(id, request.Status, request.Note, cancellationToken);
         if (result.IsFailure)
         {
             return new ObjectResult(result);
@@ -300,13 +306,13 @@ public sealed class SalesController : ControllerBase
         var result = await _sales.DeleteAsync(id, cancellationToken);
         if (result.IsFailure)
         {
-            if (result.Error.Code == ErrorCode.NotFound)
+            if (result.Error!.Code == ErrorCode.NotFound)
             {
                 return NotFound(result);
             }
             if (result.Error.Code == ErrorCode.BusinessRule)
             {
-                return Conflict(result.Error!.Message);
+                return Conflict(result.Error.Message);
             }
             return Conflict(result);
         }

@@ -541,11 +541,12 @@ public class SaleServiceTests
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
 
-        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled);
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled, "Sin stock disponible.");
 
         Assert.True(result.IsSuccess);
         Assert.Equal(10, product.Stock);
         Assert.Equal(_clock.UtcNow, sale.CancelledAt);
+        Assert.Equal("Sin stock disponible.", sale.DecisionNote);
     }
 
     [Fact]
@@ -556,11 +557,25 @@ public class SaleServiceTests
         var sale = PendingSale((product.Id, 4));
         _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
 
-        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled);
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled, "El cliente lo cancelo.");
 
         Assert.True(result.IsSuccess);
         Assert.Equal(10, product.Stock);
         await _products.DidNotReceive().FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_FailsToCancelWithoutAReason()
+    {
+        // Sin motivo el cliente se queda sin saber por que le rechazaron la compra.
+        var sale = PendingSale((Product(stock: 10).Id, 4));
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+
+        var result = await _sut.ChangeStatusAsync(sale.Id, SaleStatus.Cancelled);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCode.BusinessRule, result.Error!.Code);
+        Assert.Equal(SaleStatus.Pending, sale.Status);
     }
 
     [Fact]
@@ -605,6 +620,69 @@ public class SaleServiceTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCode.NotFound, result.Error!.Code);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DeductsStockWhenCreatedAsConfirmed()
+    {
+        var product = Product(stock: 20, price: 10m);
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.CreateAsync(new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Status = SaleStatus.Confirmed,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 5 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(15, product.Stock);
+        Assert.Equal(SaleStatus.Confirmed, result.Value!.Status);
+        Assert.Equal("user-1", result.Value.CreatedByUserId);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeductsStockWhenTransitioningFromPendingToConfirmed()
+    {
+        var product = Product(stock: 20);
+        var sale = PendingSale((product.Id, 5));
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Status = SaleStatus.Confirmed,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 5 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(15, product.Stock);
+        Assert.Equal(SaleStatus.Confirmed, result.Value!.Status);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsStockWhenTransitioningFromConfirmedToCancelled()
+    {
+        var product = Product(stock: 15);
+        var sale = PendingSale((product.Id, 5));
+        sale.Status = SaleStatus.Confirmed;
+        _customers.FindByIdAsync(_customer.Id, Arg.Any<CancellationToken>()).Returns(_customer);
+        _sales.FindByIdForUpdateAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _products.FindByIdsForUpdateAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([product]);
+
+        var result = await _sut.UpdateAsync(sale.Id, new SaleRequest
+        {
+            CustomerId = _customer.Id,
+            Status = SaleStatus.Cancelled,
+            Lines = [new SaleLineRequest { ProductId = product.Id, Quantity = 5 }]
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(20, product.Stock);
+        Assert.Equal(SaleStatus.Cancelled, result.Value!.Status);
     }
 
     private Sale PendingSale(params (Guid ProductId, int Quantity)[] lines)

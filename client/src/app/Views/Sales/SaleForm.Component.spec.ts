@@ -33,6 +33,7 @@ describe('SaleFormComponent', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       imports: [SaleFormComponent],
       providers: [provideRouter(rutas), provideHttpClient(), provideHttpClientTesting()]
@@ -90,6 +91,31 @@ describe('SaleFormComponent', () => {
     vm.onSubmit();
     httpMock.expectNone((r) => r.method === 'POST');
     expect(vm.errorMessage()).toBeTruthy();
+  });
+
+  it('restaura el borrador desde localStorage al recargar/iniciar', () => {
+    localStorage.setItem(
+      'firmeza-draft-sale-new',
+      JSON.stringify({
+        customerId: CLIENTE_ID,
+        status: 'Pending',
+        lines: [{ productId: PRODUCTO_ID, quantity: 5, unitPrice: 32500 }]
+      })
+    );
+
+    crear();
+
+    const vm = fixture.componentInstance as unknown as {
+      customerId: string | null;
+      status: string | null;
+      lines: () => { key: number; productId: string; quantity: number; unitPrice: number }[];
+    };
+
+    expect(vm.customerId).toBe(CLIENTE_ID);
+    expect(vm.status).toBe('Pending');
+    expect(vm.lines()).toHaveLength(1);
+    expect(vm.lines()[0].productId).toBe(PRODUCTO_ID);
+    expect(vm.lines()[0].quantity).toBe(5);
   });
 
   describe('modo edicion (/ventas/:id/editar)', () => {

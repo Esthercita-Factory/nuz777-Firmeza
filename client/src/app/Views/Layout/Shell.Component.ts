@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../Services/auth.service';
+import { AdminNotificationService } from '../../Services/admin-notification.service';
 
 interface NavItem {
   path: string;
@@ -51,7 +52,15 @@ export class LogoComponent {
                 <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <path [attr.d]="item.icon" />
                 </svg>
-                {{ item.label }}
+                <span class="flex-1">{{ item.label }}</span>
+                @if (item.path === '/ventas' && notificationService.pendingSaleCount() > 0) {
+                  <span
+                    class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[11px] font-black text-white shadow-sm"
+                    title="Solicitudes de producto pendientes"
+                  >
+                    {{ notificationService.pendingSaleCount() }}
+                  </span>
+                }
               </a>
             }
           </nav>
@@ -104,6 +113,23 @@ export class LogoComponent {
             </div>
 
             <div class="ml-auto flex items-center gap-3">
+              <a
+                routerLink="/ventas"
+                [queryParams]="{ status: 'Pending' }"
+                class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-400 hover:text-amber-600"
+                title="Solicitudes de producto pendientes"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                @if (notificationService.pendingSaleCount() > 0) {
+                  <span class="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">
+                    {{ notificationService.pendingSaleCount() }}
+                  </span>
+                }
+              </a>
+
               <div class="flex items-center gap-3 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-4 shadow-sm">
                 <img src="img/admin.png" alt="Admin" class="h-8 w-8 rounded-full object-cover" />
                 <span class="hidden text-sm font-bold text-slate-700 sm:block">{{ authService.getUser()?.fullName }}</span>
@@ -133,6 +159,7 @@ export class LogoComponent {
 })
 export class ShellComponent {
   protected readonly authService = inject(AuthService);
+  protected readonly notificationService = inject(AdminNotificationService);
   private readonly router = inject(Router);
 
   protected readonly navItems: NavItem[] = [
@@ -175,6 +202,7 @@ export class ShellComponent {
   constructor() {
     this.router.events.subscribe(() => this.currentNav.set(this.navFor(this.router.url)));
     this.currentNav.set(this.navFor(this.router.url));
+    this.notificationService.refresh();
   }
 
   private navFor(url: string): NavItem | null {
@@ -189,6 +217,7 @@ export class ShellComponent {
   }
 
   protected logout(): void {
+    this.notificationService.reset();
     this.authService.logout();
   }
 }

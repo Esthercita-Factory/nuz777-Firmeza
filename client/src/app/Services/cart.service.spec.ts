@@ -21,6 +21,7 @@ describe('CartService', () => {
   });
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({});
     cart = TestBed.inject(CartService);
   });
@@ -29,6 +30,17 @@ describe('CartService', () => {
     expect(cart.isEmpty()).toBe(true);
     expect(cart.count()).toBe(0);
     expect(cart.total()).toBe(0);
+  });
+
+  it('persiste el carrito en localStorage y se recupera al recargar', () => {
+    cart.add(producto(), 2);
+    expect(cart.count()).toBe(2);
+
+    // Simula recarga creando una nueva instancia que lee de localStorage
+    const nuevoCart = new CartService();
+    expect(nuevoCart.count()).toBe(2);
+    expect(nuevoCart.lines()).toHaveLength(1);
+    expect(nuevoCart.lines()[0].product.id).toBe('p1');
   });
 
   it('agrega una linea y suma cantidad y total', () => {

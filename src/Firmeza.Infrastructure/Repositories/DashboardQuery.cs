@@ -44,6 +44,77 @@ public sealed class DashboardQuery : IDashboardQuery
             .Select(sale => (sale.Id, sale.SaleNumber, sale.CustomerName, sale.SaleDate, sale.Total, sale.Status))
             .ToList();
 
-        return new DashboardSnapshot(activeProductCount, activeCustomerCount, saleCount, salesTotal, recentSales);
+        var pendingSaleCount = await _db.Sales
+            .CountAsync(sale => sale.Status == SaleStatus.Pending, cancellationToken);
+
+        // Distribucion por estado (para grafico de donas)
+        var statusGroups = await _db.Sales
+            .GroupBy(s => s.Status)
+            .Select(g => new
+            {
+                Status = g.Key,
+                Count = g.Count(),
+                Total = g.Sum(s => s.Total)
+            })
+            .ToListAsync(cancellationToken);
+
+        var allStatuses = new[] { SaleStatus.Pending, SaleStatus.Confirmed, SaleStatus.Delivered, SaleStatus.Cancelled };
+        var statusDistribution = allStatuses
+            .Select(st =>
+            {
+                var found = statusGroups.FirstOrDefault(g => g.Status == st);
+                return (Status: st, Count: found?.Count ?? 0, Total: found?.Total ?? 0m);
+            })
+            .ToList();
+
+        // Tendencia de ventas de los ultimos 7 dias (para grafico de tendencia)
+        var maxDate = await _db.Sales
+            .Where(s => s.Status != SaleStatus.Cancelled)
+            .Select(s => (DateTimeOffset?)s.SaleDate)
+            .MaxAsync(cancellationToken);
+
+        var todayUtc = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero);
+        var endDate = maxDate.HasValue
+            ? new DateTimeOffset(maxDate.Value.UtcDateTime.Date, TimeSpan.Zero)
+            : todayUtc;
+
+        if (todayUtc - endDate <= TimeSpan.FromDays(7))
+        {
+            endDate = todayUtc;
+        }
+
+        var startDate = endDate.AddDays(-6);
+        var nextDayAfterEnd = endDate.AddDays(1);
+
+        var salesForTrend = await _db.Sales
+            .Where(s => s.SaleDate >= startDate && s.SaleDate < nextDayAfterEnd && s.Status != SaleStatus.Cancelled)
+            .Select(s => new { s.SaleDate, s.Total })
+            .ToListAsync(cancellationToken);
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("es-CO");
+
+        var trend = Enumerable.Range(0, 7)
+            .Select(i => startDate.AddDays(i))
+            .Select(d =>
+            {
+                var daySales = salesForTrend.Where(s => s.SaleDate.UtcDateTime.Date == d.UtcDateTime.Date).ToList();
+                return (
+                    Date: d.ToString("yyyy-MM-dd"),
+                    Label: d.ToString("dd MMM", culture),
+                    Total: daySales.Sum(s => s.Total),
+                    Count: daySales.Count
+                );
+            })
+            .ToList();
+
+        return new DashboardSnapshot(
+            activeProductCount,
+            activeCustomerCount,
+            saleCount,
+            salesTotal,
+            recentSales,
+            pendingSaleCount,
+            statusDistribution,
+            trend);
     }
 }

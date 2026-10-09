@@ -18,6 +18,9 @@ export interface SaleSummary {
   status: SaleStatus;
   total: number;
   lineCount: number;
+  /** Motivo que dejo el administrador al confirmar o cancelar. */
+  decisionNote: string | null;
+  decidedAt: string | null;
 }
 
 export interface SaleLine {
@@ -52,6 +55,9 @@ export interface Sale {
   taxes: SaleTaxes;
   createdByUserId: string | null;
   lines: SaleLine[];
+  /** Motivo de la decision del administrador. El cliente lo lee en su portal. */
+  decisionNote: string | null;
+  decidedAt: string | null;
 }
 
 export interface SaleLineRequest {
@@ -107,9 +113,14 @@ export class SalesService {
     return this.http.put<Sale>(`${this.baseUrl}/${id}`, request);
   }
 
-  /** Avanza el estado de la venta. Solo el administrador. */
-  changeStatus(id: string, status: SaleStatus): Observable<Sale> {
-    return this.http.patch<Sale>(`${this.baseUrl}/${id}/status`, { status });
+  /**
+   * Avanza el estado de la venta. Solo el administrador.
+   *
+   * @param note Motivo de la decision. La API lo exige al cancelar: sin el, el
+   * cliente se queda sin saber por que le rechazaron la solicitud.
+   */
+  changeStatus(id: string, status: SaleStatus, note?: string | null): Observable<Sale> {
+    return this.http.patch<Sale>(`${this.baseUrl}/${id}/status`, { status, note: note ?? null });
   }
 
   /** Cancela una solicitud pendiente. Disponible para el cliente y el admin. */
@@ -165,7 +176,7 @@ export class SalesService {
   statusClass(status: SaleStatus): string {
     switch (status) {
       case 'Pending':
-        return 'bg-blue-50 text-blue-700 ring-blue-200';
+        return 'bg-amber-50 text-amber-800 ring-amber-300';
       case 'Confirmed':
         return 'bg-sky-50 text-sky-700 ring-sky-200';
       case 'Delivered':

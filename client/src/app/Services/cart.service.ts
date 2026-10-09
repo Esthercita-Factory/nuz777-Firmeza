@@ -10,16 +10,15 @@ export interface CartLine {
 /**
  * Carrito de compras del portal del cliente.
  *
- * Vive en memoria (signals), no en la base: al confirmar se convierte en un
- * POST /api/sales. Es la opcion simple y evita una entidad Carrito que hay que
- * migrar, depurar y expirar.
- *
- * Se resetea al recargar la pagina. Para el alcance de la historia alcanza con
- * eso; persistirlo en localStorage es una linea si hace falta.
+ * Vive en memoria (signals) y se persiste en localStorage para no perder
+ * los productos seleccionados si el usuario recarga la página.
+ * Al confirmar la compra se convierte en un POST /api/sales y se vacía.
  */
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private readonly items = signal<CartLine[]>([]);
+  private static readonly STORAGE_KEY = 'firmeza-cart';
+
+  private readonly items = signal<CartLine[]>(this.loadStored());
 
   /** Las lineas del carrito, reactivas. */
   readonly lines = this.items.asReadonly();
@@ -77,6 +76,7 @@ export class CartService {
       // No se agrega mas de lo que hay en stock.
       return [...lines, { product, quantity: Math.min(quantity, product.stock) }];
     });
+    this.persist();
   }
 
   setQuantity(productId: string, quantity: number): void {
@@ -89,6 +89,7 @@ export class CartService {
         return { ...line, quantity: Math.min(quantity, line.product.stock) };
       }).filter((line): line is CartLine => line !== null)
     );
+    this.persist();
   }
 
   increment(productId: string): void {
@@ -101,9 +102,54 @@ export class CartService {
 
   remove(productId: string): void {
     this.items.update((lines) => lines.filter((line) => line.product.id !== productId));
+    this.persist();
   }
 
   clear(): void {
     this.items.set([]);
+    try {
+      localStorage.removeItem(CartService.STORAGE_KEY);
+    } catch {}
+  }
+
+  /**
+   * Sincroniza el inventario del carrito con los productos frescos de la API.
+   * Si las existencias disminuyeron, ajusta la cantidad al nuevo tope disponible.
+   */
+  syncWithProducts(products: Product[]): void {
+    const map = new Map(products.map((p) => [p.id, p]));
+    this.items.update((lines) =>
+      lines
+        .map((line) => {
+          const fresh = map.get(line.product.id);
+          if (!fresh) return line;
+          if (fresh.stock <= 0) return null;
+          return {
+            product: fresh,
+            quantity: Math.min(line.quantity, fresh.stock)
+          };
+        })
+        .filter((line): line is CartLine => line !== null)
+    );
+    this.persist();
+  }
+
+  private loadStored(): CartLine[] {
+    try {
+      const raw = localStorage.getItem(CartService.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return [];
+  }
+
+  private persist(): void {
+    try {
+      localStorage.setItem(CartService.STORAGE_KEY, JSON.stringify(this.items()));
+    } catch {}
   }
 }

@@ -25,5 +25,15 @@ public class Sale
     /// <summary>Cuando se cancelo.</summary>
     public DateTimeOffset? CancelledAt { get; set; }
 
+    /// <summary>
+    /// Motivo que dejo el administrador al confirmar o cancelar la solicitud.
+    /// El cliente lo ve en su portal: es la unica forma de que sepa por que la
+    /// compra se aprobo o se rechazo.
+    /// </summary>
+    public string? DecisionNote { get; set; }
+
+    /// <summary>Cuando el administrador dejo el motivo de su decision.</summary>
+    public DateTimeOffset? DecidedAt { get; set; }
+
     public ICollection<SaleDetail> Details { get; set; } = new List<SaleDetail>();
 }

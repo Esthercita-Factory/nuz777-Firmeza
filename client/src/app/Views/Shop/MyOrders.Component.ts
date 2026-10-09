@@ -1,10 +1,13 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { toApiError } from '../../Services/Api.Service';
+import { AdminNotificationService } from '../../Services/admin-notification.service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ToastService } from '../../Services/imports.service';
 import { SaleStatus, SaleSummary, SalesService } from '../../Services/sales.service';
+import { SaleDecisionService } from '../../Services/sale-decision.service';
 import { IconComponent } from '../Shared/Icon.Component';
 
 /**
@@ -24,9 +27,20 @@ import { IconComponent } from '../Shared/Icon.Component';
         <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">Mis compras</h1>
         <p class="mt-2 text-slate-500">Sigue el estado de cada solicitud que enviaste.</p>
       </div>
-      <a routerLink="/tienda" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-500">
-        Ir al catálogo
-      </a>
+      <div class="flex items-center gap-2">
+        @if (hasUnseenDecisions(sales())) {
+          <button
+            type="button"
+            class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
+            (click)="dismissAllNotices(sales())"
+          >
+            Marcar leidas
+          </button>
+        }
+        <a routerLink="/tienda" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-500">
+          Ir al catálogo
+        </a>
+      </div>
     </div>
 
     @if (errorMessage(); as message) {
@@ -69,6 +83,20 @@ import { IconComponent } from '../Shared/Icon.Component';
           <p class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
             {{ nextStep(sale.status) }}
           </p>
+
+          @if (sale.decisionNote) {
+            <div
+              class="mt-3 rounded-xl px-4 py-3 text-xs leading-5 ring-1"
+              [class]="sale.status === 'Cancelled'
+                ? 'bg-rose-50 text-rose-800 ring-rose-200'
+                : 'bg-emerald-50 text-emerald-800 ring-emerald-200'"
+            >
+              <span class="block text-[10px] font-black uppercase tracking-wider opacity-70">
+                Motivo del administrador
+              </span>
+              <span class="mt-1 block font-semibold">{{ sale.decisionNote }}</span>
+            </div>
+          }
 
           <div class="mt-4 flex flex-wrap items-center gap-3">
             <a
@@ -127,10 +155,14 @@ import { IconComponent } from '../Shared/Icon.Component';
     }
   `
 })
-export class MyOrdersComponent implements OnInit {
+export class MyOrdersComponent implements OnInit, OnDestroy {
   protected readonly salesService = inject(SalesService);
+  protected readonly decisionService = inject(SaleDecisionService);
+  private readonly notificationService = inject(AdminNotificationService);
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
+
+  private stockChangeSub?: Subscription;
 
   protected readonly sales = signal<SaleSummary[]>([]);
   protected readonly loading = signal(false);
@@ -141,22 +173,41 @@ export class MyOrdersComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.stockChangeSub = this.notificationService.stockOrSaleChanged$.subscribe(() => {
+      this.load(true);
+    });
   }
 
-  /** Explica al cliente que sigue y quien lo hace. */
+  ngOnDestroy(): void {
+    this.stockChangeSub?.unsubscribe();
+  }
+
+  /**
+   * Explica al cliente que sigue y quien lo hace. Cuando el administrador dejo
+   * un motivo, se muestra aparte: aqui va el estado, alla va la respuesta.
+   */
   protected nextStep(status: SaleStatus): string {
     switch (status) {
       case 'Pending':
         return 'Tu solicitud fue enviada y está pendiente de confirmación. Todavía no se ha descontado el stock: eso pasa cuando el administrador la confirma.';
       case 'Confirmed':
-        return 'Tu solicitud fue confirmada. Estamos preparando la entrega de los materiales.';
+        return 'Tu solicitud fue aprobada. Estamos preparando la entrega de los materiales.';
       case 'Delivered':
         return 'Materiales entregados. Podés descargar el comprobante en PDF.';
       case 'Cancelled':
-        return 'Esta solicitud fue cancelada. Contactanos si necesitas reactivarla.';
+        return 'Esta solicitud fue cancelada. El stock no se descontó, así que podés volver a pedirlo.';
       default:
         return '';
     }
+  }
+
+  /** Boton para descartar los avisos pendientes sin abrirlos uno por uno. */
+  protected hasUnseenDecisions(sales: SaleSummary[]): boolean {
+    return this.decisionService.pendingNotices(sales).length > 0;
+  }
+
+  protected dismissAllNotices(sales: SaleSummary[]): void {
+    this.decisionService.markAllSeen(sales);
   }
 
   protected async cancel(sale: SaleSummary): Promise<void> {
@@ -169,6 +220,7 @@ export class MyOrdersComponent implements OnInit {
 
     this.salesService.cancelRequest(sale.id).subscribe({
       next: () => {
+        AdminNotificationService.broadcastStockChanged(sale.saleNumber, 'Cancelled');
         this.toastService.success('Solicitud cancelada.');
         this.load();
       },
@@ -181,8 +233,10 @@ export class MyOrdersComponent implements OnInit {
     this.load();
   }
 
-  private load(): void {
-    this.loading.set(true);
+  private load(silent = false): void {
+    if (!silent) {
+      this.loading.set(true);
+    }
     this.errorMessage.set(null);
 
     this.salesService.list({ page: this.page(), pageSize: 10 }).subscribe({
@@ -192,6 +246,11 @@ export class MyOrdersComponent implements OnInit {
         this.page.set(response.page);
         this.totalPages.set(response.totalPages);
         this.totalCount.set(response.totalCount);
+
+        // Aqui es donde el cliente se entera de que el administrador approved o
+        // cancelo su solicitud. Solo avisa de lo que no habia visto antes, asi
+        // que recargar la pagina no repite el aviso.
+        void this.decisionService.notifyDecisions(response.items);
       },
       error: (error) => {
         this.loading.set(false);

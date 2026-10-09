@@ -13,12 +13,29 @@ export interface RecentSale {
   status: SaleStatus;
 }
 
+export interface SalesStatusDistribution {
+  status: SaleStatus;
+  count: number;
+  total: number;
+}
+
+export interface SalesTrendPoint {
+  date: string;
+  label: string;
+  total: number;
+  count: number;
+}
+
 export interface DashboardData {
   activeProductCount: number;
   activeCustomerCount: number;
   saleCount: number;
   salesTotal: number;
   recentSales: RecentSale[];
+  /** Solicitudes de compra esperando respuesta del administrador. */
+  pendingSaleCount: number;
+  statusDistribution?: SalesStatusDistribution[];
+  trend?: SalesTrendPoint[];
 }
 
 @Injectable({

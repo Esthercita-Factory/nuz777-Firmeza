@@ -113,9 +113,13 @@ public sealed class SaleService : ISaleService
             var unitPrice = requested.UnitPrice ?? product.Price;
             var subtotal = InventoryCalculator.CalculateLineTotal(requested.Quantity, unitPrice);
 
-            // NO se descuenta stock aqui. Una solicitud del portal no es una venta
-            // firme: el descuento real ocurre al confirmar (ChangeStatusAsync). Asi
-            // una solicitud cancelada nunca deja inventario fantasma.
+            var isConfirmed = HasStockDeducted(request.Status ?? SaleStatus.Pending);
+            if (isConfirmed)
+            {
+                product.Stock -= requested.Quantity;
+                product.UpdatedAt = now;
+            }
+
             details.Add(new SaleDetail
             {
                 ProductId = product.Id,
@@ -125,6 +129,8 @@ public sealed class SaleService : ISaleService
             });
         }
 
+        var saleStatus = request.Status ?? SaleStatus.Pending;
+        var saleIsConfirmed = HasStockDeducted(saleStatus);
         var saleId = Guid.NewGuid();
         var sale = new Sale
         {
@@ -132,9 +138,11 @@ public sealed class SaleService : ISaleService
             SaleNumber = SaleNumberGenerator.Next(now, saleId),
             CustomerId = customer.Id,
             SaleDate = now,
-            Status = request.Status ?? SaleStatus.Pending,
+            Status = saleStatus,
             Total = InventoryCalculator.CalculateTotal(details.Select(detail => (detail.Quantity, detail.UnitPrice))),
             CreatedByUserId = _currentUser.UserId,
+            ConfirmedByUserId = saleIsConfirmed ? _currentUser.UserId : null,
+            ConfirmedAt = saleIsConfirmed ? now : null,
             Details = details
         };
 
@@ -171,7 +179,9 @@ public sealed class SaleService : ISaleService
                 productsById[detail.ProductId].Name,
                 detail.Quantity,
                 detail.UnitPrice,
-                detail.Subtotal)).ToList()));
+                detail.Subtotal)).ToList(),
+            sale.DecisionNote,
+            sale.DecidedAt));
     }
 
     private static Dictionary<Guid, (int Quantity, decimal? UnitPrice)> MergeLines(IReadOnlyCollection<SaleLineRequest> lines)
@@ -195,7 +205,9 @@ public sealed class SaleService : ISaleService
         sale.SaleDate,
         sale.Status,
         sale.Total,
-        sale.Details.Count);
+        sale.Details.Count,
+        sale.DecisionNote,
+        sale.DecidedAt);
 
     private static SaleTaxesResponse ToTaxes(Sale sale)
     {
@@ -223,7 +235,9 @@ public sealed class SaleService : ISaleService
                 detail.Quantity,
                 detail.UnitPrice,
                 detail.Subtotal))
-            .ToList());
+            .ToList(),
+        sale.DecisionNote,
+        sale.DecidedAt);
 
     public async Task<Result<SaleResponse>> UpdateAsync(Guid id, SaleRequest request, CancellationToken cancellationToken = default)
     {
@@ -279,10 +293,13 @@ public sealed class SaleService : ISaleService
         var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
         var productsById = products.ToDictionary(product => product.Id);
 
+        var targetStatus = request.Status ?? sale.Status;
+        var wasConfirmed = HasStockDeducted(sale.Status);
+        var willBeConfirmed = HasStockDeducted(targetStatus);
+
         // 1. Se devuelve al stock lo que esta venta tenia descontado. Si venia de
         // Pendiente, no tenia nada descontado y devolverlo crearia inventario.
-        var hadStockDeducted = HasStockDeducted(sale.Status);
-        if (hadStockDeducted)
+        if (wasConfirmed)
         {
             foreach (var detail in sale.Details)
             {
@@ -294,8 +311,7 @@ public sealed class SaleService : ISaleService
         }
 
         // 2. Del stock disponible se descuenta lo que la venta pasa a tener,
-        //    pero solo si la venta ya estaba confirmada. Editar una solicitud
-        //    pendiente no descuenta: el descuento ocurre al confirmar.
+        //    siempre que el estado resultante sea confirmado o entregado.
         var details = new List<SaleDetail>(requestedLines.Count);
         foreach (var (productId, requested) in requestedLines)
         {
@@ -311,8 +327,8 @@ public sealed class SaleService : ISaleService
                 return Result.Failure<SaleResponse>(Error.BusinessRule($"El producto '{product.Name}' esta inactivo."));
             }
 
-            // Al validar el stock se compara contra lo disponible + lo devuelto.
-            var available = product.Stock + (hadStockDeducted ? sale.Details.Where(d => d.ProductId == productId).Sum(d => d.Quantity) : 0);
+            // Al validar el stock se compara contra lo disponible (que ya incluye lo devuelto si venia confirmada).
+            var available = product.Stock;
             if (available < requested.Quantity)
             {
                 await transaction.RollbackAsync(cancellationToken);
@@ -323,9 +339,10 @@ public sealed class SaleService : ISaleService
             var unitPrice = requested.UnitPrice ?? product.Price;
             var subtotal = InventoryCalculator.CalculateLineTotal(requested.Quantity, unitPrice);
 
-            if (hadStockDeducted)
+            if (willBeConfirmed)
             {
                 product.Stock -= requested.Quantity;
+                product.UpdatedAt = _clock.UtcNow;
             }
 
             // La navegacion se asigna para que ToResponse devuelva sku y nombre
@@ -340,10 +357,21 @@ public sealed class SaleService : ISaleService
             });
         }
 
+        var now = _clock.UtcNow;
         sale.CustomerId = customer.Id;
         sale.Customer = customer;
-        sale.Status = request.Status ?? sale.Status;
+        sale.Status = targetStatus;
         sale.Total = InventoryCalculator.CalculateTotal(details.Select(detail => (detail.Quantity, detail.UnitPrice)));
+
+        if (willBeConfirmed && !wasConfirmed)
+        {
+            sale.ConfirmedByUserId = _currentUser.UserId;
+            sale.ConfirmedAt = now;
+        }
+        else if (!willBeConfirmed && wasConfirmed && targetStatus == SaleStatus.Cancelled)
+        {
+            sale.CancelledAt = now;
+        }
 
         // Las lineas anteriores quedan huerfanas y EF las borra en cascada.
         sale.Details.Clear();
@@ -388,11 +416,13 @@ public sealed class SaleService : ISaleService
         var products = await _products.FindByIdsForUpdateAsync(productIds, cancellationToken);
         var byId = products.ToDictionary(product => product.Id);
 
+        var now = _clock.UtcNow;
         foreach (var detail in sale.Details)
         {
             if (byId.TryGetValue(detail.ProductId, out var product))
             {
                 product.Stock += detail.Quantity;
+                product.UpdatedAt = now;
             }
         }
     }
@@ -428,15 +458,17 @@ public sealed class SaleService : ISaleService
             }
         }
 
+        var now = _clock.UtcNow;
         foreach (var detail in sale.Details)
         {
             byId[detail.ProductId].Stock -= detail.Quantity;
+            byId[detail.ProductId].UpdatedAt = now;
         }
 
         return Result.Success();
     }
 
-    public async Task<Result<SaleResponse>> ChangeStatusAsync(Guid id, SaleStatus status, CancellationToken cancellationToken = default)
+    public async Task<Result<SaleResponse>> ChangeStatusAsync(Guid id, SaleStatus status, string? note = null, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
@@ -452,6 +484,16 @@ public sealed class SaleService : ISaleService
             await transaction.RollbackAsync(cancellationToken);
             return Result.Failure<SaleResponse>(
                 Error.BusinessRule(SaleStatusRules.RejectReason(sale.Status, status)));
+        }
+
+        // Cancelar sin explicacion deja al cliente sin respuesta, asi que el motivo
+        // es obligatorio en ese caso. Confirmar y entregar lo admiten vacio.
+        var trimmedNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        if (status == SaleStatus.Cancelled && trimmedNote is null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<SaleResponse>(
+                Error.BusinessRule("Escribe el motivo por el que cancelas la solicitud: el cliente lo vera."));
         }
 
         var previous = sale.Status;
@@ -489,6 +531,8 @@ public sealed class SaleService : ISaleService
         }
 
         sale.Status = status;
+        sale.DecisionNote = trimmedNote;
+        sale.DecidedAt = trimmedNote is null ? null : now;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

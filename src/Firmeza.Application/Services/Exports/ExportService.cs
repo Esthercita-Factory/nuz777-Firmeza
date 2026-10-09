@@ -107,48 +107,84 @@ public sealed class ExportService : IExportService
             container.Page(page =>
             {
                 page.Size(PageSizes.A4.Landscape());
-                page.Margin(28);
+                page.Margin(26);
                 page.DefaultTextStyle(x => x.FontSize(9).FontColor("#1e293b"));
 
-                page.Header().Element(c => ComposeReportHeader(c, "CATÁLOGO DE PRODUCTOS", $"{products.Count} productos registrados", generatedAt));
+                page.Header().Element(c => ComposeReportHeader(c, "CATÁLOGO DE PRODUCTOS", $"{products.Count} productos registrados en inventario", generatedAt));
 
-                page.Content().PaddingTop(12).Table(table =>
+                page.Content().PaddingTop(10).Column(contentCol =>
                 {
-                    table.ColumnsDefinition(cols =>
+                    // Tarjetas de Métricas Resumen (KPIs)
+                    contentCol.Item().PaddingBottom(10).Row(kpiRow =>
                     {
-                        cols.ConstantColumn(85);  // SKU
-                        cols.RelativeColumn(3);   // Nombre
-                        cols.RelativeColumn(1.5f); // Categoría
-                        cols.ConstantColumn(65);  // Unidad
-                        cols.RelativeColumn(1.3f); // Precio
-                        cols.ConstantColumn(55);  // Stock
-                        cols.ConstantColumn(65);  // Estado
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("TOTAL PRODUCTOS").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(products.Count.ToString()).FontSize(11).ExtraBold().FontColor("#0f172a");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("ACTIVOS EN CATÁLOGO").FontSize(7).Bold().FontColor("#059669");
+                            c.Item().Text(products.Count(p => p.IsActive).ToString()).FontSize(11).ExtraBold().FontColor("#059669");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("INACTIVOS").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(products.Count(p => !p.IsActive).ToString()).FontSize(11).ExtraBold().FontColor("#e11d48");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("STOCK TOTAL (UNID)").FontSize(7).Bold().FontColor("#d97706");
+                            c.Item().Text(products.Sum(p => p.Stock).ToString("N0", culture)).FontSize(11).ExtraBold().FontColor("#d97706");
+                        });
                     });
 
-                    table.Header(h =>
+                    // Tabla de Productos
+                    contentCol.Item().Table(table =>
                     {
-                        h.Cell().Background("#0f172a").Padding(6).Text("Código / SKU").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Nombre del Producto").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Categoría").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Unidad").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Precio").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Stock").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontColor("#fff");
-                    });
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.ConstantColumn(85);   // SKU
+                            cols.RelativeColumn(3);    // Nombre
+                            cols.RelativeColumn(1.6f); // Categoría
+                            cols.ConstantColumn(65);   // Unidad
+                            cols.RelativeColumn(1.4f); // Precio
+                            cols.ConstantColumn(60);   // Stock
+                            cols.ConstantColumn(70);   // Estado
+                        });
 
-                    var idx = 0;
-                    foreach (var p in products)
-                    {
-                        var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Sku).Bold();
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Name);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Category);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Unit);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(p.Price.ToString("C2", culture));
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(p.Stock.ToString());
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(p.IsActive ? "Activo" : "Inactivo").FontColor(p.IsActive ? "#059669" : "#94a3b8");
-                        idx++;
-                    }
+                        table.Header(h =>
+                        {
+                            h.Cell().Background("#0f172a").Padding(6).Text("Código / SKU").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Nombre del Producto").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Categoría").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Unidad").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Precio Unit.").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Stock").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontSize(8.5f).FontColor("#fff");
+                        });
+
+                        var idx = 0;
+                        foreach (var p in products)
+                        {
+                            var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Sku).Bold().FontSize(8.5f).FontColor("#0f172a");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Name).FontSize(8.5f).FontColor("#1e293b");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(p.Category).FontSize(8.5f).FontColor("#475569");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(p.Unit).FontSize(8.5f).FontColor("#64748b");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(p.Price.ToString("C2", culture)).FontSize(8.5f).FontColor("#0f172a");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(p.Stock.ToString()).Bold().FontSize(8.5f).FontColor(p.Stock > 0 ? "#0f172a" : "#e11d48");
+
+                            var (stBg, stColor, stTxt) = p.IsActive ? ("#ecfdf5", "#059669", "ACTIVO") : ("#f1f5f9", "#94a3b8", "INACTIVO");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(4).AlignCenter()
+                                .Background(stBg).Border(1).BorderColor(stColor).PaddingVertical(1).PaddingHorizontal(4)
+                                .Text(stTxt).FontSize(7).Bold().FontColor(stColor);
+                            idx++;
+                        }
+                    });
                 });
 
                 page.Footer().Element(ComposeReportFooter);
@@ -217,48 +253,84 @@ public sealed class ExportService : IExportService
             container.Page(page =>
             {
                 page.Size(PageSizes.A4.Landscape());
-                page.Margin(28);
+                page.Margin(26);
                 page.DefaultTextStyle(x => x.FontSize(9).FontColor("#1e293b"));
 
-                page.Header().Element(c => ComposeReportHeader(c, "DIRECTORIO DE CLIENTES", $"{customers.Count} clientes registrados", generatedAt));
+                page.Header().Element(c => ComposeReportHeader(c, "DIRECTORIO DE CLIENTES", $"{customers.Count} clientes registrados en el sistema", generatedAt));
 
-                page.Content().PaddingTop(12).Table(table =>
+                page.Content().PaddingTop(10).Column(contentCol =>
                 {
-                    table.ColumnsDefinition(cols =>
+                    // KPIs Resumen
+                    contentCol.Item().PaddingBottom(10).Row(kpiRow =>
                     {
-                        cols.ConstantColumn(95);  // Documento
-                        cols.RelativeColumn(2.5f); // Nombre
-                        cols.ConstantColumn(45);  // Edad
-                        cols.RelativeColumn(2);   // Correo
-                        cols.RelativeColumn(1.3f); // Teléfono
-                        cols.RelativeColumn(2);   // Dirección
-                        cols.ConstantColumn(60);  // Estado
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("TOTAL CLIENTES").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(customers.Count.ToString()).FontSize(11).ExtraBold().FontColor("#0f172a");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("CLIENTES ACTIVOS").FontSize(7).Bold().FontColor("#059669");
+                            c.Item().Text(customers.Count(c => c.IsActive).ToString()).FontSize(11).ExtraBold().FontColor("#059669");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("CLIENTES INACTIVOS").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(customers.Count(c => !c.IsActive).ToString()).FontSize(11).ExtraBold().FontColor("#64748b");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("CON DIRECCIÓN REGISTRADA").FontSize(7).Bold().FontColor("#d97706");
+                            c.Item().Text(customers.Count(c => !string.IsNullOrWhiteSpace(c.Address)).ToString()).FontSize(11).ExtraBold().FontColor("#d97706");
+                        });
                     });
 
-                    table.Header(h =>
+                    // Tabla de Clientes
+                    contentCol.Item().Table(table =>
                     {
-                        h.Cell().Background("#0f172a").Padding(6).Text("Documento").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Nombre Completo").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Edad").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Correo").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Teléfono").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Dirección").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontColor("#fff");
-                    });
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.ConstantColumn(95);   // Documento
+                            cols.RelativeColumn(2.6f); // Nombre
+                            cols.ConstantColumn(45);   // Edad
+                            cols.RelativeColumn(2.1f); // Correo
+                            cols.RelativeColumn(1.3f); // Teléfono
+                            cols.RelativeColumn(2f);   // Dirección
+                            cols.ConstantColumn(65);   // Estado
+                        });
 
-                    var idx = 0;
-                    foreach (var c in customers)
-                    {
-                        var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Document).Bold();
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.FullName);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(c.Age.ToString());
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Email);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Phone);
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Address ?? "-");
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(c.IsActive ? "Activo" : "Inactivo").FontColor(c.IsActive ? "#059669" : "#94a3b8");
-                        idx++;
-                    }
+                        table.Header(h =>
+                        {
+                            h.Cell().Background("#0f172a").Padding(6).Text("Documento / NIT").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Nombre Completo").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Edad").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Correo Electrónico").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Teléfono").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Dirección").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontSize(8.5f).FontColor("#fff");
+                        });
+
+                        var idx = 0;
+                        foreach (var c in customers)
+                        {
+                            var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Document).Bold().FontSize(8.5f).FontColor("#0f172a");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.FullName).FontSize(8.5f).FontColor("#1e293b");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(c.Age.ToString()).FontSize(8.5f).FontColor("#475569");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Email).FontSize(8f).FontColor("#334155");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Phone).FontSize(8.5f).FontColor("#334155");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(c.Address ?? "-").FontSize(8f).FontColor("#64748b");
+
+                            var (stBg, stColor, stTxt) = c.IsActive ? ("#ecfdf5", "#059669", "ACTIVO") : ("#f1f5f9", "#94a3b8", "INACTIVO");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(4).AlignCenter()
+                                .Background(stBg).Border(1).BorderColor(stColor).PaddingVertical(1).PaddingHorizontal(4)
+                                .Text(stTxt).FontSize(7).Bold().FontColor(stColor);
+                            idx++;
+                        }
+                    });
                 });
 
                 page.Footer().Element(ComposeReportFooter);
@@ -347,55 +419,96 @@ public sealed class ExportService : IExportService
             container.Page(page =>
             {
                 page.Size(PageSizes.A4.Landscape());
-                page.Margin(28);
+                page.Margin(26);
                 page.DefaultTextStyle(x => x.FontSize(9).FontColor("#1e293b"));
 
-                page.Header().Element(c => ComposeReportHeader(c, "REPORTE CONSOLIDADO DE VENTAS", $"{sales.Count} ventas registradas · Total activo: {grandTotal.ToString("C2", culture)}", generatedAt));
+                page.Header().Element(c => ComposeReportHeader(c, "REPORTE CONSOLIDADO DE VENTAS", $"{sales.Count} operaciones comerciales registradas", generatedAt));
 
-                page.Content().PaddingTop(12).Table(table =>
+                page.Content().PaddingTop(10).Column(contentCol =>
                 {
-                    table.ColumnsDefinition(cols =>
+                    // KPIs Resumen
+                    contentCol.Item().PaddingBottom(10).Row(kpiRow =>
                     {
-                        cols.ConstantColumn(110); // Nº Venta
-                        cols.ConstantColumn(105); // Fecha
-                        cols.ConstantColumn(95);  // Doc Cliente
-                        cols.RelativeColumn(3);   // Cliente
-                        cols.ConstantColumn(75);  // Estado
-                        cols.ConstantColumn(50);  // Ítems
-                        cols.RelativeColumn(1.5f); // Total
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("TOTAL VENTAS").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(sales.Count.ToString()).FontSize(11).ExtraBold().FontColor("#0f172a");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("FACTURACIÓN ACTIVA").FontSize(7).Bold().FontColor("#d97706");
+                            c.Item().Text(grandTotal.ToString("C2", culture)).FontSize(11).ExtraBold().FontColor("#d97706");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("CONFIRMADAS / ENTREGADAS").FontSize(7).Bold().FontColor("#059669");
+                            c.Item().Text(sales.Count(s => s.Status == SaleStatus.Confirmed || s.Status == SaleStatus.Delivered).ToString()).FontSize(11).ExtraBold().FontColor("#059669");
+                        });
+                        kpiRow.ConstantItem(8);
+                        kpiRow.RelativeItem().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(6).Column(c =>
+                        {
+                            c.Item().Text("PENDIENTES / CANCELADAS").FontSize(7).Bold().FontColor("#64748b");
+                            c.Item().Text(sales.Count(s => s.Status == SaleStatus.Pending || s.Status == SaleStatus.Cancelled).ToString()).FontSize(11).ExtraBold().FontColor("#475569");
+                        });
                     });
 
-                    table.Header(h =>
+                    // Tabla de Ventas
+                    contentCol.Item().Table(table =>
                     {
-                        h.Cell().Background("#0f172a").Padding(6).Text("Nº Venta").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Fecha").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Doc. Cliente").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).Text("Cliente").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Ítems").Bold().FontColor("#fff");
-                        h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Total").Bold().FontColor("#fff");
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.ConstantColumn(105); // Nº Venta
+                            cols.ConstantColumn(100); // Fecha
+                            cols.ConstantColumn(95);  // Doc Cliente
+                            cols.RelativeColumn(3);   // Cliente
+                            cols.ConstantColumn(75);  // Estado
+                            cols.ConstantColumn(50);  // Ítems
+                            cols.RelativeColumn(1.5f); // Total
+                        });
+
+                        table.Header(h =>
+                        {
+                            h.Cell().Background("#0f172a").Padding(6).Text("Nº Venta").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Fecha").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Doc. Cliente").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).Text("Cliente").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignCenter().Text("Estado").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Ítems").Bold().FontSize(8.5f).FontColor("#fff");
+                            h.Cell().Background("#0f172a").Padding(6).AlignRight().Text("Total").Bold().FontSize(8.5f).FontColor("#fff");
+                        });
+
+                        var idx = 0;
+                        foreach (var s in sales)
+                        {
+                            var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.SaleNumber).Bold().FontSize(8.5f).FontColor("#0f172a");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")).FontSize(8f).FontColor("#475569");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.Customer?.Document ?? "-").FontSize(8.5f).FontColor("#475569");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.Customer?.FullName ?? "-").FontSize(8.5f).FontColor("#1e293b");
+
+                            var (stBg, stColor, stTxt) = s.Status switch
+                            {
+                                SaleStatus.Confirmed => ("#ecfdf5", "#059669", "CONFIRMADA"),
+                                SaleStatus.Delivered => ("#ecfdf5", "#059669", "ENTREGADA"),
+                                SaleStatus.Pending => ("#fffbeb", "#92400e", "PENDIENTE"),
+                                SaleStatus.Cancelled => ("#fef2f2", "#991b1b", "CANCELADA"),
+                                _ => ("#f1f5f9", "#334155", s.Status.ToString().ToUpperInvariant())
+                            };
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(4).AlignCenter()
+                                .Background(stBg).Border(1).BorderColor(stColor).PaddingVertical(1).PaddingHorizontal(4)
+                                .Text(stTxt).FontSize(7).Bold().FontColor(stColor);
+
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(s.Details.Count.ToString()).FontSize(8.5f).FontColor("#475569");
+                            table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(s.Total.ToString("C2", culture)).Bold().FontSize(8.5f).FontColor("#0f172a");
+                            idx++;
+                        }
+
+                        // Fila Total Resumen Destacada
+                        table.Cell().ColumnSpan(6).Background("#0f172a").Padding(7).AlignRight().Text("TOTAL ACUMULADO (Ventas no canceladas):").Bold().FontSize(9f).FontColor("#ffffff");
+                        table.Cell().Background("#0f172a").Padding(7).AlignRight().Text(grandTotal.ToString("C2", culture)).ExtraBold().FontSize(10.5f).FontColor("#fbbf24");
                     });
-
-                    var idx = 0;
-                    foreach (var s in sales)
-                    {
-                        var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.SaleNumber).Bold();
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.SaleDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"));
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.Customer?.Document ?? "-");
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).Text(s.Customer?.FullName ?? "-");
-                        
-                        var statusColor = s.Status == SaleStatus.Cancelled ? "#e11d48" : "#059669";
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignCenter().Text(s.Status.ToString()).Bold().FontColor(statusColor);
-                        
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(s.Details.Count.ToString());
-                        table.Cell().Background(bg).BorderBottom(1).BorderColor("#f1f5f9").Padding(5).AlignRight().Text(s.Total.ToString("C2", culture)).Bold();
-                        idx++;
-                    }
-
-                    // Fila Total
-                    table.Cell().ColumnSpan(6).Background("#f1f5f9").Padding(6).AlignRight().Text("TOTAL ACUMULADO (Ventas no canceladas):").Bold();
-                    table.Cell().Background("#f1f5f9").Padding(6).AlignRight().Text(grandTotal.ToString("C2", culture)).ExtraBold().FontColor("#d97706");
                 });
 
                 page.Footer().Element(ComposeReportFooter);
@@ -408,19 +521,51 @@ public sealed class ExportService : IExportService
     // Helpers comunes
     private static void ComposeReportHeader(IContainer container, string title, string subtitle, DateTimeOffset generatedAt)
     {
-        container.Row(row =>
+        container.Column(col =>
         {
-            row.RelativeItem().Column(col =>
+            // Barra superior decorativa corporativa (Azul marino + Ámbar)
+            col.Item().PaddingBottom(10).Row(bar =>
             {
-                col.Item().Text("FIRMEZA · Materiales de Construcción").FontSize(10).Bold().FontColor("#d97706");
-                col.Item().Text(title).FontSize(16).ExtraBold().FontColor("#0f172a");
-                col.Item().Text(subtitle).FontSize(9).FontColor("#64748b");
+                bar.RelativeItem(5).Height(3.5f).Background("#0f172a");
+                bar.RelativeItem(1).Height(3.5f).Background("#d97706");
             });
 
-            row.ConstantItem(180).AlignRight().Column(col =>
+            col.Item().Row(row =>
             {
-                col.Item().Text($"Generado: {generatedAt:dd/MM/yyyy HH:mm}").FontSize(8).FontColor("#64748b");
-                col.Item().Text("Reporte oficial ERP").FontSize(8).Bold().FontColor("#0f172a");
+                row.RelativeItem().Column(brand =>
+                {
+                    brand.Item().Row(r =>
+                    {
+                        r.AutoItem().Border(1).BorderColor("#0f172a").Background("#0f172a").PaddingHorizontal(6).PaddingVertical(2)
+                            .Text("F").FontSize(11).ExtraBold().FontColor("#ffffff");
+                        r.RelativeItem().PaddingLeft(7).Column(c =>
+                        {
+                            c.Item().Text("FIRMEZA").FontSize(15).ExtraBold().FontColor("#0f172a");
+                            c.Item().Text("MATERIALES DE CONSTRUCCIÓN & ACABADOS").FontSize(6.5f).Bold().FontColor("#d97706");
+                        });
+                    });
+
+                    brand.Item().PaddingTop(4).Text(title).FontSize(14).ExtraBold().FontColor("#0f172a");
+                    brand.Item().Text(subtitle).FontSize(8.5f).FontColor("#64748b");
+                });
+
+                row.ConstantItem(210).Column(cardCol =>
+                {
+                    cardCol.Item().Border(1).BorderColor("#cbd5e1").Background("#f8fafc").Padding(8).Column(card =>
+                    {
+                        card.Item().Row(r =>
+                        {
+                            r.RelativeItem().Text("REPORTE OFICIAL").FontSize(7.5f).ExtraBold().FontColor("#0f172a");
+                            r.AutoItem().Background("#e2e8f0").PaddingHorizontal(4).PaddingVertical(1)
+                                .Text("SISTEMA ERP").FontSize(6.5f).Bold().FontColor("#334155");
+                        });
+
+                        card.Item().PaddingTop(3).Text($"Emisión: {generatedAt:dd/MM/yyyy HH:mm}").FontSize(8).FontColor("#475569");
+                        card.Item().Text("Clasificación: Control Operativo").FontSize(7.5f).FontColor("#64748b");
+                        card.Item().PaddingTop(4).Background("#ecfdf5").Border(1).BorderColor("#059669").PaddingVertical(1).AlignCenter()
+                            .Text("DOCUMENTO VÁLIDO").FontSize(6.5f).ExtraBold().FontColor("#059669");
+                    });
+                });
             });
         });
     }
@@ -429,13 +574,13 @@ public sealed class ExportService : IExportService
     {
         container.BorderTop(1).BorderColor("#e2e8f0").PaddingTop(6).Row(row =>
         {
-            row.RelativeItem().Text("Firmeza ERP · Gestión operativa y soporte documental").FontSize(7.5f).FontColor("#94a3b8");
+            row.RelativeItem().Text("Firmeza S.A.S. · NIT 901.458.789-1 · Generado por Firmeza ERP v2.0").FontSize(7.5f).FontColor("#94a3b8");
             row.RelativeItem().AlignRight().Text(x =>
             {
                 x.Span("Página ").FontSize(7.5f).FontColor("#94a3b8");
-                x.CurrentPageNumber().FontSize(7.5f).FontColor("#94a3b8");
+                x.CurrentPageNumber().FontSize(7.5f).Bold().FontColor("#64748b");
                 x.Span(" de ").FontSize(7.5f).FontColor("#94a3b8");
-                x.TotalPages().FontSize(7.5f).FontColor("#94a3b8");
+                x.TotalPages().FontSize(7.5f).Bold().FontColor("#64748b");
             });
         });
     }
