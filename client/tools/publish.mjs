@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const clientRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const source = join(clientRoot, "dist", "client", "browser");
-const target = join(clientRoot, "..", "Firmeza.Web", "wwwroot");
+const target = join(clientRoot, "..", "API", "src", "Firmeza.Web", "wwwroot");
 
 const entries = await readdir(source, { withFileTypes: true });
 if (!entries.some((entry) => entry.isFile() && entry.name === "index.html")) {

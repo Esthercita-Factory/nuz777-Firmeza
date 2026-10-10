@@ -5,18 +5,18 @@ COPY client/package*.json ./
 RUN npm ci
 
 COPY client/ ./
-# El build publica el bundle en Firmeza.Web/wwwroot.
+# El build publica el bundle en API/src/Firmeza.Web/wwwroot.
 RUN npm run build:publish
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /app
 
-COPY src/Firmeza.Web/Firmeza.Web.csproj Firmeza.Web/
-RUN dotnet restore Firmeza.Web/Firmeza.Web.csproj
+COPY API/src/Firmeza.Web/Firmeza.Web.csproj API/src/Firmeza.Web/
+RUN dotnet restore API/src/Firmeza.Web/Firmeza.Web.csproj
 
-COPY src/Firmeza.Web/ Firmeza.Web/
-COPY --from=frontend /src/Firmeza.Web/wwwroot Firmeza.Web/wwwroot
-RUN dotnet publish Firmeza.Web/Firmeza.Web.csproj -c Release -o /app/publish /p:UseAppHost=false /p:SkipFrontendBuild=true
+COPY API/src/Firmeza.Web/ API/src/Firmeza.Web/
+COPY --from=frontend /src/API/src/Firmeza.Web/wwwroot API/src/Firmeza.Web/wwwroot
+RUN dotnet publish API/src/Firmeza.Web/Firmeza.Web.csproj -c Release -o /app/publish /p:UseAppHost=false /p:SkipFrontendBuild=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

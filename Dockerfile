@@ -1,18 +1,18 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /app
 
 COPY Firmeza.sln ./
-COPY src/Firmeza.Domain/Firmeza.Domain.csproj Firmeza.Domain/
-COPY src/Firmeza.Application/Firmeza.Application.csproj Firmeza.Application/
-COPY src/Firmeza.Infrastructure/Firmeza.Infrastructure.csproj Firmeza.Infrastructure/
-COPY src/Firmeza.Api/Firmeza.Api.csproj Firmeza.Api/
-RUN dotnet restore Firmeza.Api/Firmeza.Api.csproj
+COPY API/src/Firmeza.Domain/Firmeza.Domain.csproj API/src/Firmeza.Domain/
+COPY API/src/Firmeza.Application/Firmeza.Application.csproj API/src/Firmeza.Application/
+COPY API/src/Firmeza.Infrastructure/Firmeza.Infrastructure.csproj API/src/Firmeza.Infrastructure/
+COPY API/src/Firmeza.Api/Firmeza.Api.csproj API/src/Firmeza.Api/
+RUN dotnet restore API/src/Firmeza.Api/Firmeza.Api.csproj
 
-COPY src/Firmeza.Domain/ Firmeza.Domain/
-COPY src/Firmeza.Application/ Firmeza.Application/
-COPY src/Firmeza.Infrastructure/ Firmeza.Infrastructure/
-COPY src/Firmeza.Api/ Firmeza.Api/
-RUN dotnet publish Firmeza.Api/Firmeza.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+COPY API/src/Firmeza.Domain/ API/src/Firmeza.Domain/
+COPY API/src/Firmeza.Application/ API/src/Firmeza.Application/
+COPY API/src/Firmeza.Infrastructure/ API/src/Firmeza.Infrastructure/
+COPY API/src/Firmeza.Api/ API/src/Firmeza.Api/
+RUN dotnet publish API/src/Firmeza.Api/Firmeza.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

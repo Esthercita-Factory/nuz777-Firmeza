@@ -39,4 +39,6 @@ Thumbs.db
 # antes de que existiera esta regla, y .gitignore no desversiona lo ya rastreado.
 # Se sacaron con git rm --cached.
 client/dist/
+**/wwwroot/
+API/src/Firmeza.Web/wwwroot/
 Firmeza.Web/wwwroot/
