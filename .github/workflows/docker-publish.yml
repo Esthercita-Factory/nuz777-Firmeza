@@ -53,8 +53,6 @@ jobs:
         include:
           - name: api
             dockerfile: Dockerfile
-          - name: web
-            dockerfile: Dockerfile.web
     steps:
       - name: Checkout
         uses: actions/checkout@v4

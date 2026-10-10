@@ -42,3 +42,6 @@ client/dist/
 **/wwwroot/
 API/src/Firmeza.Web/wwwroot/
 Firmeza.Web/wwwroot/
+
+# Cliente Angular (desacoplado a su propio repositorio nuz777-Firmeza-Client)
+/client/

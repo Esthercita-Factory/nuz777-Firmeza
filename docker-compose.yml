@@ -1,4 +1,10 @@
 services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    image: ${FIRMEZA_TESTS_IMAGE:-firmeza-tests:local}
+
   db:
     image: postgres:16-alpine
     environment:
@@ -21,6 +27,8 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
+      tests:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     environment:
@@ -35,24 +43,9 @@ services:
       Jwt__RefreshTokenDays: 7
       Database__MigrateOnStartup: "true"
       Swagger__Enabled: "true"
-      Cors__AllowedOrigins__0: http://localhost:8081
+      Cors__AllowedOrigins__0: ${CORS_CLIENT_ORIGIN:-http://localhost:8081}
     ports:
       - "8080:8080"
-
-  web:
-    image: ${FIRMEZA_WEB_IMAGE:-ghcr.io/esthercita-factory/nuz777-firmeza-web:latest}
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-    depends_on:
-      api:
-        condition: service_started
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
-      Https__Enabled: "false"
-    ports:
-      - "8081:8080"
 
 volumes:
   firmeza-postgres:
