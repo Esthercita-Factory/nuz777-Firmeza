@@ -1,14 +1,15 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
 import { toApiError } from '../../Services/Api.Service';
 import { AuthService } from '../../Services/auth.service';
 import { ToastService } from '../../Services/imports.service';
+import { ThemeToggleComponent } from '../Shared/ThemeToggle.Component';
 
 @Component({
   selector: 'app-register',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, ThemeToggleComponent],
   template: `
     <div class="relative flex min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/50 px-4 py-8 text-slate-800 sm:px-6 lg:px-8">
       <!-- Malla de fondo sutil y orbes de iluminación suave -->
@@ -73,7 +74,8 @@ import { ToastService } from '../../Services/imports.service';
           Volver al portal
         </a>
 
-        <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
+          <app-theme-toggle size="sm" />
           <span>¿Ya tienes cuenta?</span>
           <a routerLink="/login" class="font-bold text-blue-600 hover:text-blue-500 hover:underline">
             Iniciar sesión →
@@ -229,18 +231,57 @@ import { ToastService } from '../../Services/imports.service';
                     Solo números
                   </span>
                 </div>
-                <input
-                  id="age"
-                  name="age"
-                  type="number"
-                  min="18"
-                  max="120"
-                  placeholder="Mínimo 18 años"
-                  class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-3 px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                  [(ngModel)]="age"
-                  (keydown)="onNumericKeyDown($event, 'la edad')"
-                  required
-                />
+                <div class="relative flex items-center">
+                  <span class="pointer-events-none absolute left-3.5 text-slate-400">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
+                  <input
+                    id="age"
+                    name="age"
+                    type="number"
+                    min="18"
+                    max="120"
+                    placeholder="Mínimo 18 años"
+                    class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-3 pl-10 pr-12 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    [(ngModel)]="age"
+                    (keydown)="onNumericKeyDown($event, 'la edad')"
+                    required
+                  />
+                  <div class="absolute right-2 flex items-center">
+                    <div class="stepper-container flex flex-col -space-y-px rounded-lg border border-slate-200 bg-white shadow-2xs overflow-hidden">
+                      <button
+                        type="button"
+                        (click)="incrementAge()"
+                        [disabled]="age >= 120"
+                        title="Aumentar edad"
+                        aria-label="Aumentar edad"
+                        class="stepper-btn flex h-4 w-7 items-center justify-center text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-2.5 w-2.5">
+                          <path d="m18 15-6-6-6 6" />
+                        </svg>
+                      </button>
+                      <div class="h-px bg-slate-200 dark:bg-white/10"></div>
+                      <button
+                        type="button"
+                        (click)="decrementAge()"
+                        [disabled]="age <= 18"
+                        title="Disminuir edad"
+                        aria-label="Disminuir edad"
+                        class="stepper-btn flex h-4 w-7 items-center justify-center text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-2.5 w-2.5">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 @if (fieldError('age'); as message) {
                   <p class="mt-1 text-xs font-semibold text-rose-600">{{ message }}</p>
                 }
@@ -433,12 +474,15 @@ import { ToastService } from '../../Services/imports.service';
     </div>
   `
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit, OnDestroy {
   private static readonly DRAFT_KEY = 'firmeza-draft-register';
+  private static readonly DRAFT_TTL_MS = 60 * 1000; // 1 minuto límite para conservar datos
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+
+  private draftExpiryTimer?: ReturnType<typeof setTimeout>;
 
   protected readonly year = new Date().getFullYear();
 
@@ -453,6 +497,13 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.restoreDraft();
+  }
+
+  ngOnDestroy(): void {
+    if (this.draftExpiryTimer) {
+      clearTimeout(this.draftExpiryTimer);
+      this.draftExpiryTimer = undefined;
+    }
   }
 
   protected readonly showPassword = signal(false);
@@ -532,6 +583,22 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+  protected incrementAge(): void {
+    const current = Number(this.age) || 18;
+    if (current < 120) {
+      this.age = current + 1;
+      this.saveDraft();
+    }
+  }
+
+  protected decrementAge(): void {
+    const current = Number(this.age) || 18;
+    if (current > 18) {
+      this.age = current - 1;
+      this.saveDraft();
+    }
+  }
+
   private readonly levels = [
     { label: 'Muy débil', bar: 'bg-rose-500', text: 'text-rose-600' },
     { label: 'Débil', bar: 'bg-orange-500', text: 'text-orange-600' },
@@ -604,6 +671,11 @@ export class RegisterComponent implements OnInit {
   protected saveDraft(): void {
     queueMicrotask(() => {
       try {
+        if (!this.hasFormData()) {
+          this.clearDraft();
+          return;
+        }
+
         const draft = {
           document: this.document,
           fullName: this.fullName,
@@ -612,16 +684,48 @@ export class RegisterComponent implements OnInit {
           address: this.address,
           email: this.email,
           password: this.password,
-          confirmPassword: this.confirmPassword
+          confirmPassword: this.confirmPassword,
+          savedAt: Date.now()
         };
         localStorage.setItem(RegisterComponent.DRAFT_KEY, JSON.stringify(draft));
+        this.restartDraftTimer(RegisterComponent.DRAFT_TTL_MS);
       } catch {}
     });
+  }
+
+  private restartDraftTimer(delayMs: number): void {
+    if (this.draftExpiryTimer) {
+      clearTimeout(this.draftExpiryTimer);
+    }
+    this.draftExpiryTimer = setTimeout(() => {
+      this.handleDraftExpired();
+    }, delayMs);
+  }
+
+  private handleDraftExpired(): void {
+    if (!this.hasFormData()) return;
+
+    this.document = '';
+    this.fullName = '';
+    this.age = 18;
+    this.phone = '';
+    this.address = '';
+    this.email = '';
+    this.password = '';
+    this.confirmPassword = '';
+    this.onPasswordChange();
+    this.clearDraft();
+
+    this.toastService.info('Los datos del formulario se han borrado tras 1 minuto de inactividad.');
   }
 
   @HostListener('window:beforeunload')
   protected onBeforeUnload(): void {
     try {
+      if (!this.hasFormData()) {
+        this.clearDraft();
+        return;
+      }
       const draft = {
         document: this.document,
         fullName: this.fullName,
@@ -630,7 +734,8 @@ export class RegisterComponent implements OnInit {
         address: this.address,
         email: this.email,
         password: this.password,
-        confirmPassword: this.confirmPassword
+        confirmPassword: this.confirmPassword,
+        savedAt: Date.now()
       };
       localStorage.setItem(RegisterComponent.DRAFT_KEY, JSON.stringify(draft));
     } catch {}
@@ -639,6 +744,10 @@ export class RegisterComponent implements OnInit {
   private clearDraft(): void {
     try {
       localStorage.removeItem(RegisterComponent.DRAFT_KEY);
+      if (this.draftExpiryTimer) {
+        clearTimeout(this.draftExpiryTimer);
+        this.draftExpiryTimer = undefined;
+      }
     } catch {}
   }
 
@@ -647,6 +756,17 @@ export class RegisterComponent implements OnInit {
       const raw = localStorage.getItem(RegisterComponent.DRAFT_KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
+      if (!data || typeof data !== 'object') return;
+
+      const savedAt = typeof data.savedAt === 'number' ? data.savedAt : 0;
+      const elapsed = Date.now() - savedAt;
+
+      // Si pasaron 60 segundos (1 minuto) o más, se borra el borrador
+      if (savedAt > 0 && elapsed >= RegisterComponent.DRAFT_TTL_MS) {
+        this.clearDraft();
+        return;
+      }
+
       if (typeof data.document === 'string') this.document = data.document;
       if (typeof data.fullName === 'string') this.fullName = data.fullName;
       if (typeof data.phone === 'string') this.phone = data.phone;
@@ -658,7 +778,29 @@ export class RegisterComponent implements OnInit {
       if (this.password) {
         this.onPasswordChange();
       }
-    } catch {}
+
+      // Si se restauraron datos, programar temporizador para el tiempo restante
+      if (this.hasFormData()) {
+        const remaining = savedAt > 0
+          ? Math.max(1000, RegisterComponent.DRAFT_TTL_MS - elapsed)
+          : RegisterComponent.DRAFT_TTL_MS;
+        this.restartDraftTimer(remaining);
+      }
+    } catch {
+      this.clearDraft();
+    }
+  }
+
+  private hasFormData(): boolean {
+    return Boolean(
+      (this.document && this.document.trim()) ||
+      (this.fullName && this.fullName.trim()) ||
+      (this.phone && this.phone.trim()) ||
+      (this.address && this.address.trim()) ||
+      (this.email && this.email.trim()) ||
+      this.password ||
+      this.confirmPassword
+    );
   }
 
   private level() {

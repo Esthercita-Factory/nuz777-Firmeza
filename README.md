@@ -1,124 +1,137 @@
-# Firmeza
+# Firmeza ERP & Portal Web
 
-API REST para gestionar productos, clientes y ventas de un negocio de materiales de construccion.
+Sistema integral de gestión comercial, inventario, facturación y tienda virtual para materiales de construcción y acabados.
+
+---
 
 ## Arquitectura
 
-La solucion usa arquitectura limpia con dependencias dirigidas hacia el dominio:
+La solución está construida bajo los principios de **Arquitectura Limpia** con flujo unidireccional de dependencias hacia el núcleo de dominio:
 
-- `Firmeza.Domain`: entidades, enums y reglas puras de negocio.
-- `Firmeza.Application`: casos de uso, DTOs, puertos y resultados.
-- `Firmeza.Infrastructure`: PostgreSQL, EF Core, Identity, repositorios y JWT.
-- `Firmeza.Api`: endpoints HTTP, autenticacion Bearer, Swagger y middleware. Aplica migraciones y crea el administrador inicial.
-- `client`: cliente Angular 22 (standalone, signals, Tailwind) que consume la API.
-- `Firmeza.Web`: host del cliente Angular. Sirve los estaticos de `wwwroot` y resuelve las rutas del router con fallback a `index.html`.
-- `Firmeza.Tests`: pruebas unitarias de dominio y casos de uso.
+- **`API/src/Firmeza.Domain`**: Entidades, enumeraciones, excepciones de dominio y reglas puras de cálculo (como `InventoryCalculator.SplitTaxInclusive`).
+- **`API/src/Firmeza.Application`**: Casos de uso, DTOs, validaciones, abstracciones de repositorio (`ISaleRepository`, `IProductRepository`, etc.) y contratos de infraestructura (`IMailService`).
+- **`API/src/Firmeza.Infrastructure`**: Persistencia con PostgreSQL y EF Core, ASP.NET Core Identity, JWT Tokens, generación de documentos QuestPDF y despacho SMTP de correo.
+- **`API/src/Firmeza.Api`**: API REST en .NET 10, autenticación Bearer, autorización basada en roles (`Administrador` / `Cliente`), políticas CORS, Swagger y endpoints de salud.
+- **`client`**: Aplicación SPA en Angular (Standalone components, Signals, Tailwind CSS) que consume la API directamente.
+- **`API/src/Firmeza.Web`**: Servidor host de distribución de la SPA estática compilada con fallback HTML5.
+- **`API/src/Firmeza.Tests`**: Pruebas unitarias y de integración para dominio, servicios y seguridad.
 
-El navegador llama **directo** a `Firmeza.Api` (URL en `client/src/app/Services/Api.Service.ts`), por eso la API habilita CORS para los origenes del cliente. `Firmeza.Web` no accede a la base de datos: solo publica la SPA compilada.
+---
 
-## Endpoints principales
+## Matriz de Endpoints por Rol
 
-- `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/refresh`, `GET /api/auth/me`.
-- `GET|POST /api/products`, `GET|PUT|DELETE /api/products/{id}`.
-- `GET /api/products/export/excel`, `GET /api/products/export/pdf`.
-- `GET|POST /api/customers`, `GET|PUT|DELETE /api/customers/{id}`.
-- `GET /api/customers/export/excel`, `GET /api/customers/export/pdf`.
-- `GET|POST /api/sales`, `GET /api/sales/{id}`, `DELETE /api/sales/{id}`, `GET /api/sales/{id}/receipt`.
-- `GET /api/sales/export/excel`, `GET /api/sales/export/pdf`.
-- `POST /api/imports/excel`, `GET /api/imports/template`.
-- `GET /api/dashboard`.
-- `GET /health`.
+### 1. Endpoints Públicos / Anónimos
+No requieren cabecera `Authorization`.
 
-Los endpoints de negocio requieren `Authorization: Bearer <access-token>`. Swagger esta disponible en `/swagger` cuando `Swagger:Enabled` es `true`, por defecto en desarrollo.
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `POST` | `/api/auth/login` | Autenticación con email y contraseña. Retorna JWT y Refresh Token. |
+| `POST` | `/api/auth/register` | Registro público de clientes. Crea solicitud de acceso. |
+| `POST` | `/api/auth/refresh` | Renovación de access token usando refresh token. |
+| `GET` | `/health` | Verificación de estado de salud del servicio. |
+| `GET` | `/api/products` *(público)* | Catálogo de materiales disponibles para la tienda virtual. |
 
-## Requisitos
+### 2. Endpoints para Rol Cliente (`Cliente`)
+Requieren `Authorization: Bearer <token>` con rol `Cliente`.
 
-- .NET SDK 10.
-- PostgreSQL 16 o Docker Desktop.
-- Node.js 22 y npm para el cliente Angular.
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `GET` | `/api/auth/me` | Obtiene el perfil y datos del usuario autenticado. |
+| `POST` | `/api/sales` | Crea un pedido/compra desde el carrito con cálculo de IVA y comprobante. |
+| `GET` | `/api/sales` | Historial de pedidos realizados por el cliente autenticado. |
+| `GET` | `/api/sales/{id}` | Detalle de un pedido específico del cliente. |
+| `GET` | `/api/sales/{id}/receipt` | Descarga directa del comprobante oficial de venta en PDF. |
 
-## Ejecucion local
+### 3. Endpoints para Rol Administrador (`Administrador`)
+Requieren `Authorization: Bearer <token>` con rol `Administrador`.
 
-1. Base de datos (puerto local `5433`):
+| Módulo | Métodos y Rutas | Descripción |
+|---|---|---|
+| **Dashboard** | `GET /api/dashboard` | Indicadores KPIs, distribución de pedidos y tendencia de ventas. |
+| **Productos** | `POST /api/products`<br>`PUT /api/products/{id}`<br>`DELETE /api/products/{id}`<br>`GET /api/products/export/excel`<br>`GET /api/products/export/pdf` | Gestión completa de inventario, stock, precios y exportaciones oficiales. |
+| **Clientes** | `GET /api/customers`<br>`POST /api/customers`<br>`GET\|PUT\|DELETE /api/customers/{id}`<br>`GET /api/customers/export/excel`<br>`GET /api/customers/export/pdf` | Gestión del directorio de clientes comerciales y reportes. |
+| **Solicitudes** | `GET /api/customer-requests`<br>`POST /api/customer-requests/{id}/review` | Revisión, aprobación o rechazo de solicitudes de registro de clientes. |
+| **Ventas / ERP** | `GET /api/sales`<br>`GET /api/sales/{id}`<br>`PUT /api/sales/{id}/decision`<br>`DELETE /api/sales/{id}`<br>`GET /api/sales/export/excel`<br>`GET /api/sales/export/pdf` | Control global de operaciones, aprobación/entrega con notas, cancelación y auditoría. |
+| **Carga Masiva**| `POST /api/imports/excel`<br>`GET /api/imports/template` | Importación masiva de catálogo vía Excel XLSX con validación estricta fila a fila. |
 
+---
+
+## Requisitos de Entorno
+
+- **.NET SDK 10**.
+- **Node.js 20+** y **npm** (para cliente Angular).
+- **PostgreSQL 16** (o Docker).
+- **Docker** y **Docker Compose** (recomendado para despliegues).
+
+---
+
+## Ejecución Local (Desarrollo)
+
+1. **Base de Datos PostgreSQL (puerto `5433` local)**:
    ```bash
    docker compose up -d db
    ```
 
-2. Compilar todo (el build de .NET publica tambien el cliente Angular si `client/node_modules` existe):
-
+2. **Compilar solución**:
    ```bash
    dotnet restore Firmeza.sln
    dotnet build Firmeza.sln
    ```
 
-3. Levantar la API en `http://localhost:5180`:
-
+3. **Iniciar API Backend (`http://localhost:5180`)**:
    ```bash
-   dotnet run --project Firmeza.Api --launch-profile http
+   dotnet run --project API/src/Firmeza.Api --launch-profile http
    ```
+   > Swagger UI estará disponible en `http://localhost:5180/swagger`.
 
-4. Cliente Angular con recarga en caliente en `http://localhost:4200`:
-
+4. **Iniciar Cliente Angular (`http://localhost:4200`)**:
    ```bash
    cd client
    npm install
    npm start
    ```
 
-   O bien el host compilado en `http://localhost:5161`:
+---
 
-   ```bash
-   npm run build:publish   # publica en Firmeza.Web/wwwroot
-   dotnet run --project Firmeza.Web
-   ```
+## Ejecución de Pruebas
 
-La URL de la API esta en `client/src/app/Services/Api.Service.ts` (`API_URL`). Si la API se mueve de puerto, cambia ese valor y rebuild.
-
-En produccion reemplaza `SeedAdmin:Password` y `Jwt:SigningKey` mediante variables de entorno o un gestor de secretos.
-
-## Cliente Angular
-
-Estructura en `client/src/app`:
-
-```
-Services/     Api.Service.ts (URL + toApiError), auth.service.ts, dashboard.service.ts,
-              products.service.ts, customers.service.ts, sales.service.ts, imports.service.ts
-Guards/       auth.guard.ts (AuthGuard y AdminGuard)
-Interceptors/ auth.interceptor.ts (Bearer + refresh ante 401)
-router/       app.routes.ts
-Views/        Home, Auth, Layout, Dashboard, Products, Customers, Sales, Imports, Errors, Shared
-```
-
-Rutas: `/` landing publica, `/login`, `/register`, `/sin-acceso`, y dentro del panel (`/dashboard`, `/productos`, `/clientes`, `/ventas`, `/carga-masiva`) protegido por rol `Administrador`. El token y el refresh token viven en `localStorage`; el interceptor renueva la sesion ante un `401`.
-
-## Migraciones EF Core
-
-Las migraciones estan en `Firmeza.Infrastructure/Persistence/Migrations`. El manifiesto local `dotnet-tools.json` fija `dotnet-ef` en la version 10.0.12.
-
-```bash
-dotnet tool restore
-dotnet tool run dotnet-ef migrations add NombreDeLaMigracion --project Firmeza.Infrastructure --startup-project Firmeza.Infrastructure
-dotnet tool run dotnet-ef database update --project Firmeza.Infrastructure --startup-project Firmeza.Infrastructure
-```
-
-## Pruebas
-
+### Pruebas Unitarias y de Integración Backend (.NET)
+Ejecuta los 144 tests automatizados de dominio, casos de uso, exports, cálculos de IVA y seguridad:
 ```bash
 dotnet test Firmeza.sln
 ```
 
-## Docker completo
-
+### Pruebas Frontend (Angular / Vitest)
+Ejecuta las pruebas de componentes, guards, interceptores y servicios:
 ```bash
-docker compose up --build
+cd client
+npm test -- --watch=false
 ```
 
-El compose levanta PostgreSQL, la API y el host web con el cliente Angular ya compilado. API en `http://localhost:8080`, Swagger en `http://localhost:8080/swagger`, panel en `http://localhost:8081` y PostgreSQL en `localhost:5433`. La API acepta CORS desde `http://localhost:8081` mediante `Cors__AllowedOrigins__0`.
+---
 
-Las imagenes publicadas en GHCR son `ghcr.io/esthercita-factory/nuz777-firmeza-api:latest` y `ghcr.io/esthercita-factory/nuz777-firmeza-web:latest`. Para usarlas sin reconstruirlas: `docker compose pull` y despues `docker compose up -d`.
+## Despliegue con Docker
 
-## Documentacion tecnica
+El proyecto incluye configuración lista para producción en [`docker-compose.yml`](docker-compose.yml) y variables de ejemplo en [`.env.example`](.env.example):
 
-- `docs/capas-y-validaciones.md`: responsabilidades y flujo de validacion.
-- `docs/diagrams.md`: modelo entidad-relacion.
+```bash
+# 1. Copiar y ajustar variables de entorno
+cp .env.example .env
+
+# 2. Levantar la pila completa (Base de datos, API y Servidor Web SPA)
+docker compose up -d --build
+```
+
+- **Portal Web / ERP**: `http://localhost:8081`
+- **API Backend**: `http://localhost:8080`
+- **Documentación Swagger**: `http://localhost:8080/swagger`
+- **Base de Datos**: `localhost:5433`
+
+---
+
+## Documentación Técnica Adicional
+
+- [**Flujo de Compra y Ciclo de Venta**](docs/flujo-compra-cliente.md): Explicación detallada del recorrido del cliente, transaccionalidad y emisión de comprobantes.
+- [**Configuración SMTP y Envío de Correo**](docs/configuracion-smtp.md): Guía para configurar Gmail, Outlook, SendGrid y servidores personalizados.
+- [**Capas y Validaciones**](docs/capas-y-validaciones.md): Responsabilidades arquitectónicas y manejo de errores.
+- [**Diagramas y Modelo de Datos**](docs/diagrams.md): Diagrama Entidad-Relación y estructuras relacionales.

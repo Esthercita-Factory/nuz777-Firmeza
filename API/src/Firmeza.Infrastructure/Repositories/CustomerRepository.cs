@@ -41,6 +41,15 @@ public sealed class CustomerRepository : ICustomerRepository
     public Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default)
         => _db.Sales.AnyAsync(sale => sale.CustomerId == id, cancellationToken);
 
+    public Task<int> CountSalesAsync(Guid id, CancellationToken cancellationToken = default)
+        => _db.Sales.CountAsync(sale => sale.CustomerId == id, cancellationToken);
+
+    public async Task RemoveSalesByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
+    {
+        var sales = await _db.Sales.Where(sale => sale.CustomerId == customerId).ToListAsync(cancellationToken);
+        _db.Sales.RemoveRange(sales);
+    }
+
     public Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default)
         => _db.Customers.FirstOrDefaultAsync(customer => customer.Document == document.Trim(), cancellationToken);
 

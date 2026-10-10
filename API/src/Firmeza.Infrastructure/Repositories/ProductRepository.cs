@@ -81,6 +81,12 @@ public sealed class ProductRepository : IProductRepository
                 || product.Category.Contains(term));
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.Category))
+        {
+            var category = filter.Category;
+            query = query.Where(product => product.Category == category);
+        }
+
         return filter.OnlyActive ? query.Where(product => product.IsActive) : query;
     }
 }

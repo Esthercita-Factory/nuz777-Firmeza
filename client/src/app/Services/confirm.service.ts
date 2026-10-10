@@ -5,7 +5,7 @@ export interface ConfirmRequest {
   message: string;
   confirmLabel: string;
   cancelLabel: string;
-  tone: 'danger' | 'default';
+  tone: 'danger' | 'default' | 'warning';
 }
 
 /**

@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
@@ -9,12 +9,18 @@ import { SaleDecisionService } from '../../Services/sale-decision.service';
 import { AuthService } from '../../Services/auth.service';
 import { AdminNotificationService } from '../../Services/admin-notification.service';
 import { IconComponent } from '../Shared/Icon.Component';
+import { SkylineBackgroundComponent } from '../Shared/SkylineBackground.Component';
 
 @Component({
   selector: 'app-sale-detail',
-  imports: [IconComponent, RouterLink, CurrencyPipe, DatePipe],
+  imports: [IconComponent, RouterLink, CurrencyPipe, DatePipe, SkylineBackgroundComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mx-auto max-w-4xl">
+    <div class="relative min-h-[calc(100vh-14rem)] pb-12">
+      @if (authService.isAdministrator()) {
+        <app-skyline-background />
+      }
+      <div class="relative z-10 mx-auto max-w-4xl">
       @if (errorMessage(); as message) {
         <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">{{ message }}</div>
       }
@@ -51,7 +57,7 @@ import { IconComponent } from '../Shared/Icon.Component';
               </a>
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-xl bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-rose-100 hover:text-rose-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
                 [disabled]="current.status === 'Delivered'"
                 [title]="current.status === 'Delivered' ? 'No se puede eliminar una venta entregada' : 'Eliminar venta'"
                 (click)="remove(current)"
@@ -236,6 +242,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </div>
         }
       }
+      </div>
     </div>
   `
 })

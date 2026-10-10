@@ -4,6 +4,7 @@ import { AuthService } from '../../Services/auth.service';
 import { CartService } from '../../Services/cart.service';
 import { LogoComponent } from '../Layout/Shell.Component';
 import { IconComponent } from '../Shared/Icon.Component';
+import { ThemeToggleComponent } from '../Shared/ThemeToggle.Component';
 
 /**
  * Layout del portal del cliente. Es distinto del panel de administracion: el
@@ -12,17 +13,17 @@ import { IconComponent } from '../Shared/Icon.Component';
  */
 @Component({
   selector: 'app-client-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LogoComponent, IconComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LogoComponent, IconComponent, ThemeToggleComponent],
   template: `
     <div class="relative flex min-h-screen flex-col justify-between overflow-x-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/40 text-slate-800">
       <!-- Malla de fondo arquitectónica y orbes de iluminación sutil -->
-      <div class="pointer-events-none fixed inset-0 auth-grid opacity-45"></div>
-      <div class="pointer-events-none fixed -left-28 -top-28 h-96 w-96 rounded-full bg-blue-200/30 blur-3xl"></div>
-      <div class="pointer-events-none fixed -bottom-32 -right-28 h-96 w-96 rounded-full bg-sky-200/30 blur-3xl"></div>
+      <div class="pointer-events-none fixed inset-0 auth-grid opacity-45 transform-gpu"></div>
+      <div class="pointer-events-none fixed -left-28 -top-28 h-96 w-96 rounded-full bg-blue-200/30 blur-3xl transform-gpu"></div>
+      <div class="pointer-events-none fixed -bottom-32 -right-28 h-96 w-96 rounded-full bg-sky-200/30 blur-3xl transform-gpu"></div>
 
       <!-- Skyline de edificios corporativos en fondo -->
       <svg
-        class="pointer-events-none fixed inset-x-0 bottom-0 z-0 h-64 w-full select-none opacity-40"
+        class="pointer-events-none fixed inset-x-0 bottom-0 z-0 h-64 w-full select-none opacity-40 transform-gpu"
         viewBox="0 0 1200 300"
         preserveAspectRatio="xMidYMax slice"
         aria-hidden="true"
@@ -129,6 +130,7 @@ import { IconComponent } from '../Shared/Icon.Component';
                 <span class="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-black text-white">{{ cart.count() }}</span>
               }
             </a>
+            <app-theme-toggle size="sm" />
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"

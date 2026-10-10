@@ -100,7 +100,19 @@ public sealed class CustomerService : ICustomerService
         return Result.Success(ToResponse(customer));
     }
 
-    public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Result<CustomerSalesCountResponse>> GetSalesCountAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var customer = await _customers.FindByIdAsync(id, cancellationToken);
+        if (customer is null)
+        {
+            return Result.Failure<CustomerSalesCountResponse>(Error.EntityNotFound("Cliente", id));
+        }
+
+        var count = await _customers.CountSalesAsync(id, cancellationToken);
+        return Result.Success(new CustomerSalesCountResponse(count, count > 0));
+    }
+
+    public async Task<Result> DeleteAsync(Guid id, bool force = false, CancellationToken cancellationToken = default)
     {
         var customer = await _customers.FindByIdAsync(id, cancellationToken);
         if (customer is null)
@@ -108,13 +120,22 @@ public sealed class CustomerService : ICustomerService
             return Result.Success();
         }
 
-        if (await _customers.HasSalesAsync(id, cancellationToken))
+        var hasSales = await _customers.HasSalesAsync(id, cancellationToken);
+        if (hasSales && !force)
         {
             return Result.Failure(Error.Conflict("No se puede eliminar un cliente que tiene ventas asociadas."));
         }
 
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        if (hasSales)
+        {
+            await _customers.RemoveSalesByCustomerIdAsync(id, cancellationToken);
+        }
+
         _customers.Remove(customer);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result.Success();
     }

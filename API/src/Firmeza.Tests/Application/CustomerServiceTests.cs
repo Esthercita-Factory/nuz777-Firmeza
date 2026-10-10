@@ -88,10 +88,26 @@ public class CustomerServiceTests
         _customers.FindByIdAsync(id, Arg.Any<CancellationToken>()).Returns(new Customer { Id = id });
         _customers.HasSalesAsync(id, Arg.Any<CancellationToken>()).Returns(true);
 
-        var result = await _sut.DeleteAsync(id);
+        var result = await _sut.DeleteAsync(id, force: false);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCode.Conflict, result.Error!.Code);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesCustomerAndSales_WhenForced()
+    {
+        var id = Guid.NewGuid();
+        var customer = new Customer { Id = id };
+        _customers.FindByIdAsync(id, Arg.Any<CancellationToken>()).Returns(customer);
+        _customers.HasSalesAsync(id, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await _sut.DeleteAsync(id, force: true);
+
+        Assert.True(result.IsSuccess);
+        await _customers.Received(1).RemoveSalesByCustomerIdAsync(id, Arg.Any<CancellationToken>());
+        _customers.Received(1).Remove(customer);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -105,7 +121,22 @@ public class CustomerServiceTests
         var result = await _sut.DeleteAsync(id);
 
         Assert.True(result.IsSuccess);
+        await _customers.DidNotReceive().RemoveSalesByCustomerIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         _customers.Received(1).Remove(customer);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetSalesCountAsync_ReturnsCountAndHasSales()
+    {
+        var id = Guid.NewGuid();
+        _customers.FindByIdAsync(id, Arg.Any<CancellationToken>()).Returns(new Customer { Id = id });
+        _customers.CountSalesAsync(id, Arg.Any<CancellationToken>()).Returns(3);
+
+        var result = await _sut.GetSalesCountAsync(id);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Value!.SalesCount);
+        Assert.True(result.Value.HasSales);
     }
 }

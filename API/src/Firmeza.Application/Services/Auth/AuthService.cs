@@ -17,6 +17,7 @@ public sealed class AuthService : IAuthService
     private readonly ICurrentUserService _currentUser;
     private readonly IClock _clock;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMailService? _mailService;
 
     public AuthService(
         IUserService users,
@@ -26,7 +27,8 @@ public sealed class AuthService : IAuthService
         ICustomerRepository customers,
         ICurrentUserService currentUser,
         IClock clock,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IMailService? mailService = null)
     {
         _users = users;
         _tokens = tokens;
@@ -36,6 +38,7 @@ public sealed class AuthService : IAuthService
         _currentUser = currentUser;
         _clock = clock;
         _unitOfWork = unitOfWork;
+        _mailService = mailService;
     }
 
     public async Task<Result<TokenResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -108,6 +111,18 @@ public sealed class AuthService : IAuthService
         }, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (_mailService is not null)
+        {
+            try
+            {
+                await _mailService.SendWelcomeEmailAsync(created.Value.Email, created.Value.FullName, cancellationToken);
+            }
+            catch
+            {
+                // Fallo de correo no debe tumbar el registro
+            }
+        }
 
         return Result.Success(new UserResponse(
             created.Value.Id,

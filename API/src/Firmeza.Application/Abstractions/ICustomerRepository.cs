@@ -17,6 +17,10 @@ public interface ICustomerRepository
 
     Task<bool> HasSalesAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<int> CountSalesAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task RemoveSalesByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
+
     Task<Customer?> FindByDocumentAsync(string document, CancellationToken cancellationToken = default);
 
     /// <summary>Busca el cliente asociado a una cuenta de Identity.</summary>

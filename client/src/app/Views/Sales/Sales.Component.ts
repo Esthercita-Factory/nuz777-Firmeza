@@ -36,7 +36,7 @@ import { AdminNotificationService } from '../../Services/admin-notification.serv
           </svg>
           Exportar PDF
         </button>
-        <a routerLink="/ventas/nueva" class="rounded-xl bg-blue-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-blue-100 transition hover:bg-blue-300">
+        <a routerLink="/ventas/nueva" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-500 active:scale-95">
           + Nueva venta
         </a>
       </div>
@@ -81,7 +81,7 @@ import { AdminNotificationService } from '../../Services/admin-notification.serv
                 class="transition border-l-4"
                 [class]="sale.status === 'Pending'
                   ? 'border-l-amber-500 bg-amber-50/60 hover:bg-amber-100/60 font-medium'
-                  : 'border-l-transparent hover:bg-blue-50/40'"
+                  : 'border-l-transparent hover:bg-slate-50/70'"
               >
                 <td class="px-6 py-4 font-bold text-slate-900">
                   <div class="flex items-center gap-2">

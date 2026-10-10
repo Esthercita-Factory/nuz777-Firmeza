@@ -22,13 +22,23 @@ import { ConfirmService } from '../../Services/confirm.service';
           <div class="flex items-start gap-4">
             <span
               class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-              [class]="request.tone === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'"
+              [class]="
+                request.tone === 'danger'
+                  ? 'bg-rose-100 text-rose-600'
+                  : request.tone === 'warning'
+                    ? 'bg-amber-100 text-amber-600'
+                    : 'bg-blue-100 text-blue-600'
+              "
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
                 @if (request.tone === 'danger') {
                   <path d="M3 6h18" />
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
                   <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                } @else if (request.tone === 'warning') {
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
                 } @else {
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 16v-4M12 8h.01" />
@@ -49,7 +59,13 @@ import { ConfirmService } from '../../Services/confirm.service';
             <button
               type="button"
               class="rounded-xl px-5 py-3 text-sm font-bold text-white shadow-lg transition"
-              [class]="request.tone === 'danger' ? 'bg-rose-600 shadow-rose-200 hover:bg-rose-500' : 'bg-blue-600 shadow-blue-200 hover:bg-blue-500'"
+              [class]="
+                request.tone === 'danger'
+                  ? 'bg-rose-600 shadow-rose-200 hover:bg-rose-500'
+                  : request.tone === 'warning'
+                    ? 'bg-amber-600 shadow-amber-200 hover:bg-amber-500'
+                    : 'bg-blue-600 shadow-blue-200 hover:bg-blue-500'
+              "
               (click)="confirmService.accept()"
             >
               {{ request.confirmLabel }}
@@ -82,6 +98,28 @@ import { ConfirmService } from '../../Services/confirm.service';
         background-color: #fff;
         box-shadow: 0 25px 60px -12px rgb(15 23 42 / 0.35);
         animation: confirm-panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      :host-context(.dark) .confirm-backdrop {
+        background-color: rgba(0, 0, 0, 0.75);
+      }
+
+      :host-context(.dark) .confirm-panel {
+        background-color: #08080a;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95);
+      }
+
+      :host-context(.dark) button.bg-white {
+        background-color: #12141d;
+        border-color: rgba(255, 255, 255, 0.14);
+        color: #f1f5f9;
+      }
+
+      :host-context(.dark) button.bg-white:hover {
+        background-color: #1c2132;
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
       }
 
       @keyframes confirm-fade-in {

@@ -21,7 +21,7 @@ public sealed class ProductService : IProductService
     public async Task<Result<PagedResponse<ProductResponse>>> ListAsync(ProductQuery query, CancellationToken cancellationToken = default)
     {
         var page = ToPageRequest(query);
-        var result = await _products.ListAsync(new ProductFilter(query.Q?.Trim(), query.OnlyActive), page, cancellationToken);
+        var result = await _products.ListAsync(new ProductFilter(query.Q?.Trim(), query.OnlyActive, query.Category?.Trim()), page, cancellationToken);
         var items = result.Items.Select(ToResponse).ToList();
 
         return Result.Success(new PagedResponse<ProductResponse>

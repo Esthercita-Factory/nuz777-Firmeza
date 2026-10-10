@@ -138,4 +138,18 @@ public class ProductServiceTests
         Assert.Equal(10, result.Value.PageSize);
         Assert.Single(result.Value.Items);
     }
+
+    [Fact]
+    public async Task ListAsync_PassesCategoryToProductFilter()
+    {
+        _products.ListAsync(Arg.Any<ProductFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Product> { Items = [], TotalCount = 0 });
+
+        await _sut.ListAsync(new ProductQuery { Q = "tubo", Category = "Tuberías", OnlyActive = true });
+
+        await _products.Received(1).ListAsync(
+            Arg.Is<ProductFilter>(f => f.Term == "tubo" && f.Category == "Tuberías" && f.OnlyActive),
+            Arg.Any<PageRequest>(),
+            Arg.Any<CancellationToken>());
+    }
 }

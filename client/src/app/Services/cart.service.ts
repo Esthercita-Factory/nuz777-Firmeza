@@ -49,9 +49,18 @@ export class CartService {
   readonly subtotalBase = computed(() => this.taxes().subtotalBase);
   readonly iva = computed(() => this.taxes().tax);
 
+  /** Mapa reactivo O(1) de cantidades por id de producto. */
+  private readonly quantityMap = computed(() => {
+    const map = new Map<string, number>();
+    for (const line of this.items()) {
+      map.set(line.product.id, line.quantity);
+    }
+    return map;
+  });
+
   /** Cantidad de una linea por id de producto, para pintar el badge del menu. */
   quantityOf(productId: string): number {
-    return this.items().find((line) => line.product.id === productId)?.quantity ?? 0;
+    return this.quantityMap().get(productId) ?? 0;
   }
 
   /** Cantidad que todavia se puede agregar sin pasarse del stock. */

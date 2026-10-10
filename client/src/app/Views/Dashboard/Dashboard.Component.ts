@@ -1,5 +1,5 @@
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
 import { AuthService } from '../../Services/auth.service';
@@ -256,7 +256,7 @@ import { IconComponent } from '../Shared/Icon.Component';
             <div class="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
               <button
                 type="button"
-                (click)="chartView.set('trend')"
+                (click)="setChartView('trend')"
                 [class]="chartView() === 'trend'
                   ? 'bg-white text-slate-950 shadow-sm font-black'
                   : 'text-slate-600 hover:text-slate-900 font-bold'"
@@ -271,7 +271,7 @@ import { IconComponent } from '../Shared/Icon.Component';
               </button>
               <button
                 type="button"
-                (click)="chartView.set('donut')"
+                (click)="setChartView('donut')"
                 [class]="chartView() === 'donut'
                   ? 'bg-white text-slate-950 shadow-sm font-black'
                   : 'text-slate-600 hover:text-slate-900 font-bold'"
@@ -347,12 +347,15 @@ import { IconComponent } from '../Shared/Icon.Component';
                     <!-- Línea de trazado -->
                     <path
                       [attr.d]="trendInfo.linePath"
+                      pathLength="1000"
+                      [attr.stroke-dasharray]="1000"
+                      [attr.stroke-dashoffset]="1000 * (1 - trendAnimationProgress())"
                       fill="none"
                       stroke="#2563eb"
                       stroke-width="3"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      class="transition-all duration-300 drop-shadow-sm"
+                      class="drop-shadow-sm"
                     />
 
                     <!-- Puntos interactivos y columnas hover -->
@@ -447,8 +450,23 @@ import { IconComponent } from '../Shared/Icon.Component';
                   </svg>
                 </div>
 
+                <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                  <p class="text-xs text-slate-400">Pasa el cursor sobre los puntos para ver el detalle diario.</p>
+                  <button
+                    type="button"
+                    (click)="triggerTrendAnimation()"
+                    class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition active:scale-95 cursor-pointer"
+                    title="Reproducir animación de la línea azul"
+                  >
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Animar línea
+                  </button>
+                </div>
+
                 <!-- Resumen inferior de la tendencia -->
-                <div class="mt-4 grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
+                <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div class="rounded-xl bg-slate-50 p-3.5">
                     <span class="text-xs font-semibold text-slate-500">Ingresos del período:</span>
                     <p class="mt-0.5 text-base font-black text-slate-950 tabular-nums">
@@ -478,10 +496,13 @@ import { IconComponent } from '../Shared/Icon.Component';
           } @else {
             <!-- 2. GRÁFICO DE DONAS (DISTRIBUCIÓN POR ESTADO) -->
             @if (donutData(); as donutInfo) {
-              <div class="grid items-center gap-8 lg:grid-cols-12">
+              <div class="grid items-center gap-8 lg:grid-cols-12 animate-donut-pop">
                 <!-- Dona SVG -->
                 <div class="flex flex-col items-center justify-center lg:col-span-5">
-                  <div class="relative h-60 w-60">
+                  <div
+                    class="relative h-60 w-60 transition-transform duration-700 ease-out"
+                    [style.transform]="'scale(' + (0.92 + 0.08 * donutAnimationProgress()) + ')'"
+                  >
                     <svg viewBox="0 0 240 240" class="h-full w-full -rotate-90 transform select-none">
                       <!-- Anillo base de fondo -->
                       <circle
@@ -502,10 +523,12 @@ import { IconComponent } from '../Shared/Icon.Component';
                             [attr.r]="donutInfo.radius"
                             fill="none"
                             [attr.stroke]="slice.color"
-                            stroke-width="26"
+                            [attr.stroke-width]="hoveredDonutStatus() === slice.status ? 32 : 26"
                             [attr.stroke-dasharray]="slice.dashArray"
                             [attr.stroke-dashoffset]="slice.dashOffset"
-                            class="cursor-pointer transition-all duration-300 hover:opacity-90"
+                            class="donut-slice cursor-pointer"
+                            [style.filter]="hoveredDonutStatus() === slice.status ? 'drop-shadow(0 0 8px ' + slice.glow + ')' : 'none'"
+                            [style.opacity]="hoveredDonutStatus() && hoveredDonutStatus() !== slice.status ? '0.35' : '1'"
                             (mouseenter)="hoveredDonutStatus.set(slice.status)"
                             (mouseleave)="hoveredDonutStatus.set(null)"
                           />
@@ -514,29 +537,45 @@ import { IconComponent } from '../Shared/Icon.Component';
                     </svg>
 
                     <!-- Centro de la dona con datos de conteo -->
-                    <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <div
+                      class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center transition-opacity duration-300"
+                      [style.opacity]="0.3 + 0.7 * donutAnimationProgress()"
+                    >
                       @if (activeDonutSlice(); as active) {
-                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">{{ active.label }}</span>
-                        <span class="text-3xl font-black text-slate-950 tabular-nums">{{ active.count }}</span>
-                        <span class="text-xs font-bold" [class]="active.textClass">{{ active.percentage | number: '1.0-1' }}%</span>
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 animate-donut-center">{{ active.label }}</span>
+                        <span class="text-3xl font-black text-slate-950 tabular-nums animate-donut-center">{{ active.count }}</span>
+                        <span class="text-xs font-bold animate-donut-center" [class]="active.textClass">{{ active.percentage | number: '1.0-1' }}%</span>
                       } @else {
                         <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">Total</span>
-                        <span class="text-3xl font-black text-slate-950 tabular-nums">{{ donutInfo.totalCount }}</span>
+                        <span class="text-3xl font-black text-slate-950 tabular-nums">{{ animatedTotalCount() }}</span>
                         <span class="text-xs font-bold text-slate-500">solicitudes</span>
                       }
                     </div>
                   </div>
-                  <p class="mt-3 text-xs text-slate-400">Pasa el cursor sobre una rebanada o tarjeta para ver detalle.</p>
+                  <div class="mt-3 flex items-center gap-2">
+                    <p class="text-xs text-slate-400">Pasa el cursor sobre una rebanada o tarjeta para ver detalle.</p>
+                    <button
+                      type="button"
+                      (click)="triggerDonutAnimation()"
+                      class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition active:scale-95 cursor-pointer"
+                      title="Reproducir animación de la dona"
+                    >
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Animar
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Desglose por estados (Tarjetas / Leyenda interactiva) -->
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-7">
                   @for (slice of donutInfo.slices; track slice.status) {
                     <div
-                      class="flex flex-col justify-between rounded-xl border p-4 transition-all"
+                      class="flex flex-col justify-between rounded-xl border p-4 transition-all duration-200 cursor-pointer"
                       [class]="hoveredDonutStatus() === slice.status
-                        ? 'border-blue-400 bg-blue-50/40 shadow-sm ring-1 ring-blue-300'
-                        : 'border-slate-200/80 bg-white hover:border-slate-300'"
+                        ? slice.cardActiveClass
+                        : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-sm'"
                       (mouseenter)="hoveredDonutStatus.set(slice.status)"
                       (mouseleave)="hoveredDonutStatus.set(null)"
                     >
@@ -559,11 +598,11 @@ import { IconComponent } from '../Shared/Icon.Component';
                         </div>
                       </div>
 
-                      <!-- Barra de progreso miniatura -->
+                      <!-- Barra de progreso miniatura animada -->
                       <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
-                          class="h-full rounded-full transition-all duration-500"
-                          [style.width.%]="slice.percentage"
+                          class="h-full rounded-full transition-all duration-300"
+                          [style.width.%]="slice.percentage * donutAnimationProgress()"
                           [style.backgroundColor]="slice.color"
                         ></div>
                       </div>
@@ -589,7 +628,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </a>
           <a
             routerLink="/productos"
-            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-white"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
           >
             <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M6 2 3 6h14l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0" />
@@ -598,7 +637,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </a>
           <a
             routerLink="/clientes"
-            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-white"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
           >
             <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" />
@@ -616,7 +655,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </a>
           <a
             routerLink="/carga-masiva"
-            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-white"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
           >
             <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
@@ -721,10 +760,16 @@ import { IconComponent } from '../Shared/Icon.Component';
     }
   `
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly salesService = inject(SalesService);
   private readonly dashboardService = inject(DashboardService);
+
+  private donutAnimFrameId: number | null = null;
+  protected readonly donutAnimationProgress = signal<number>(1);
+
+  private trendAnimFrameId: number | null = null;
+  protected readonly trendAnimationProgress = signal<number>(1);
 
   protected readonly data = signal<DashboardData | null>(null);
   protected readonly loading = signal(true);
@@ -815,19 +860,48 @@ export class DashboardComponent implements OnInit {
 
     const radius = 78;
     const circumference = 2 * Math.PI * radius;
+    const progress = this.donutAnimationProgress();
 
-    const statusConfig: Record<SaleStatus, { label: string; color: string; textClass: string }> = {
-      Pending: { label: 'Pendientes', color: '#f59e0b', textClass: 'text-amber-600' },
-      Confirmed: { label: 'Confirmadas', color: '#0284c7', textClass: 'text-sky-600' },
-      Delivered: { label: 'Entregadas', color: '#10b981', textClass: 'text-emerald-600' },
-      Cancelled: { label: 'Canceladas', color: '#f43f5e', textClass: 'text-rose-600' }
+    const statusConfig: Record<
+      SaleStatus,
+      { label: string; color: string; textClass: string; cardActiveClass: string; glow: string }
+    > = {
+      Pending: {
+        label: 'Pendientes',
+        color: '#f59e0b',
+        textClass: 'text-amber-600',
+        cardActiveClass: 'border-amber-400 bg-amber-50/50 shadow-md ring-2 ring-amber-300 scale-[1.015]',
+        glow: 'rgba(245, 158, 11, 0.45)'
+      },
+      Confirmed: {
+        label: 'Confirmadas',
+        color: '#0284c7',
+        textClass: 'text-sky-600',
+        cardActiveClass: 'border-sky-400 bg-sky-50/50 shadow-md ring-2 ring-sky-300 scale-[1.015]',
+        glow: 'rgba(2, 132, 199, 0.45)'
+      },
+      Delivered: {
+        label: 'Entregadas',
+        color: '#10b981',
+        textClass: 'text-emerald-600',
+        cardActiveClass: 'border-emerald-400 bg-emerald-50/50 shadow-md ring-2 ring-emerald-300 scale-[1.015]',
+        glow: 'rgba(16, 185, 129, 0.45)'
+      },
+      Cancelled: {
+        label: 'Canceladas',
+        color: '#f43f5e',
+        textClass: 'text-rose-600',
+        cardActiveClass: 'border-rose-400 bg-rose-50/50 shadow-md ring-2 ring-rose-300 scale-[1.015]',
+        glow: 'rgba(244, 63, 94, 0.45)'
+      }
     };
 
     let accumulatedLength = 0;
     const slices = distribution.map((item) => {
       const config = statusConfig[item.status];
       const percentage = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
-      const strokeLength = totalCount > 0 ? (item.count / totalCount) * circumference : 0;
+      const fullStrokeLength = totalCount > 0 ? (item.count / totalCount) * circumference : 0;
+      const strokeLength = fullStrokeLength * progress;
       const dashArray = `${strokeLength} ${circumference - strokeLength}`;
       const dashOffset = -accumulatedLength;
       accumulatedLength += strokeLength;
@@ -837,6 +911,8 @@ export class DashboardComponent implements OnInit {
         label: config.label,
         color: config.color,
         textClass: config.textClass,
+        cardActiveClass: config.cardActiveClass,
+        glow: config.glow,
         count: item.count,
         total: item.total,
         percentage,
@@ -854,6 +930,11 @@ export class DashboardComponent implements OnInit {
     };
   });
 
+  protected readonly animatedTotalCount = computed(() => {
+    const total = this.donutData()?.totalCount ?? 0;
+    return Math.round(total * this.donutAnimationProgress());
+  });
+
   protected readonly activeDonutSlice = computed(() => {
     const status = this.hoveredDonutStatus();
     if (!status) return null;
@@ -864,8 +945,94 @@ export class DashboardComponent implements OnInit {
     this.reload();
   }
 
+  ngOnDestroy(): void {
+    if (this.donutAnimFrameId !== null) {
+      cancelAnimationFrame(this.donutAnimFrameId);
+      this.donutAnimFrameId = null;
+    }
+    if (this.trendAnimFrameId !== null) {
+      cancelAnimationFrame(this.trendAnimFrameId);
+      this.trendAnimFrameId = null;
+    }
+  }
+
+  protected setChartView(view: 'trend' | 'donut'): void {
+    this.chartView.set(view);
+    if (view === 'donut') {
+      this.triggerDonutAnimation();
+    } else {
+      this.triggerTrendAnimation();
+    }
+  }
+
   protected toggleChartView(): void {
-    this.chartView.set(this.chartView() === 'trend' ? 'donut' : 'trend');
+    this.setChartView(this.chartView() === 'trend' ? 'donut' : 'trend');
+  }
+
+  protected triggerDonutAnimation(): void {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+      this.donutAnimationProgress.set(1);
+      return;
+    }
+
+    if (this.donutAnimFrameId !== null) {
+      cancelAnimationFrame(this.donutAnimFrameId);
+      this.donutAnimFrameId = null;
+    }
+
+    this.donutAnimationProgress.set(0);
+    const startTime = performance.now();
+    const duration = 850;
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      // Easing: ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.donutAnimationProgress.set(eased);
+
+      if (t < 1) {
+        this.donutAnimFrameId = requestAnimationFrame(animate);
+      } else {
+        this.donutAnimationProgress.set(1);
+        this.donutAnimFrameId = null;
+      }
+    };
+
+    this.donutAnimFrameId = requestAnimationFrame(animate);
+  }
+
+  protected triggerTrendAnimation(): void {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+      this.trendAnimationProgress.set(1);
+      return;
+    }
+
+    if (this.trendAnimFrameId !== null) {
+      cancelAnimationFrame(this.trendAnimFrameId);
+      this.trendAnimFrameId = null;
+    }
+
+    this.trendAnimationProgress.set(0);
+    const startTime = performance.now();
+    const duration = 950;
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      // Easing: ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.trendAnimationProgress.set(eased);
+
+      if (t < 1) {
+        this.trendAnimFrameId = requestAnimationFrame(animate);
+      } else {
+        this.trendAnimationProgress.set(1);
+        this.trendAnimFrameId = null;
+      }
+    };
+
+    this.trendAnimFrameId = requestAnimationFrame(animate);
   }
 
   protected reload(): void {
@@ -874,6 +1041,11 @@ export class DashboardComponent implements OnInit {
       next: (dashboard) => {
         this.loading.set(false);
         this.data.set(dashboard);
+        if (this.chartView() === 'donut') {
+          this.triggerDonutAnimation();
+        } else {
+          this.triggerTrendAnimation();
+        }
       },
       error: (error) => {
         this.loading.set(false);

@@ -50,6 +50,8 @@ public sealed record CustomerResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);
 
+public sealed record CustomerSalesCountResponse(int SalesCount, bool HasSales);
+
 public sealed record CustomerQuery
 {
     public string? Q { get; init; }

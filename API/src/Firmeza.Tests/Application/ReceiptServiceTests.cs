@@ -53,8 +53,45 @@ public class ReceiptServiceTests
                     Quantity = 1,
                     UnitPrice = 19000m,
                     Subtotal = 19000m
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = Guid.NewGuid(),
+                    Product = new Product { Name = "Varilla de Acero 1/2", Sku = "VAR-003" },
+                    Quantity = 10,
+                    UnitPrice = 28000m,
+                    Subtotal = 280000m
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = Guid.NewGuid(),
+                    Product = new Product { Name = "Ladrillo Limpio", Sku = "LAD-004" },
+                    Quantity = 200,
+                    UnitPrice = 1200m,
+                    Subtotal = 240000m
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = Guid.NewGuid(),
+                    Product = new Product { Name = "Pintura Blanca Cuñete", Sku = "PIN-005" },
+                    Quantity = 5,
+                    UnitPrice = 120000m,
+                    Subtotal = 600000m
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = Guid.NewGuid(),
+                    Product = new Product { Name = "Tubo PVC 1/2 pulgada", Sku = "TUB-006" },
+                    Quantity = 8,
+                    UnitPrice = 15000m,
+                    Subtotal = 120000m
                 }
-            }
+            },
+            DecisionNote = "Aprobado con descuento corporativo del 5%."
         };
 
         // Act
@@ -63,6 +100,7 @@ public class ReceiptServiceTests
         // Assert
         Assert.NotNull(pdfBytes);
         Assert.True(pdfBytes.Length > 100);
+        File.WriteAllBytes("/tmp/test_receipt.pdf", pdfBytes);
 
         // Los archivos PDF válidos comienzan con la firma "%PDF-"
         var header = Encoding.ASCII.GetString(pdfBytes, 0, 5);

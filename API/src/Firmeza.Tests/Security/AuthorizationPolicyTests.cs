@@ -135,7 +135,7 @@ public class AuthorizationPolicyTests
 
     [Theory]
     [MemberData(nameof(AdminEndpoints))]
-    public void AdminEndpoints_RequireTheAdministratorRole(string httpMethod, string route, string endpoint)
+    public void AdminEndpoints_RequireTheAdministratorRole(string httpMethod, string route, string _)
     {
         var action = RequireAction(httpMethod, route);
 
@@ -144,7 +144,7 @@ public class AuthorizationPolicyTests
 
     [Theory]
     [MemberData(nameof(CustomerEndpoints))]
-    public void CustomerEndpoints_AreNotRestrictedToAdministrators(string httpMethod, string route, string endpoint)
+    public void CustomerEndpoints_AreNotRestrictedToAdministrators(string httpMethod, string route, string _)
     {
         // Puede haber [Authorize] a nivel de clase, pero nunca [Authorize(Roles = Administrador)]
         // sobre un endpoint que el Cliente necesita para comprar.

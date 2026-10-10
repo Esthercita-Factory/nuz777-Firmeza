@@ -73,7 +73,18 @@ import { IconComponent } from '../Shared/Icon.Component';
                         >
                           −
                         </button>
-                        <span class="w-10 text-center font-bold text-slate-900">{{ line.quantity }}</span>
+                        <input
+                          type="number"
+                          min="1"
+                          [max]="line.product.stock"
+                          [value]="line.quantity"
+                          (focus)="onQuantityFocus($event)"
+                          (input)="onQuantityInput(line.product.id, line.product.stock, $event)"
+                          (change)="onQuantityChange(line.product.id, line.product.stock, $event)"
+                          (keydown.enter)="onQuantityEnter($event)"
+                          class="h-7 w-12 rounded-lg border border-slate-300 bg-white text-center font-mono text-xs font-bold text-slate-900 shadow-inner outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-400"
+                          [attr.aria-label]="'Cantidad de ' + line.product.name"
+                        />
                         <button
                           type="button"
                           aria-label="Agregar una unidad"
@@ -166,6 +177,72 @@ export class CheckoutComponent {
 
   protected lineTotal(price: number, quantity: number): number {
     return price * quantity;
+  }
+
+  protected onQuantityFocus(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (input) {
+      input.select();
+    }
+  }
+
+  protected onQuantityEnter(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (input) {
+      input.blur();
+    }
+  }
+
+  protected onQuantityInput(productId: string, stock: number, event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+
+    const raw = input.value.trim();
+    if (raw === '') return;
+
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed) || parsed < 1) return;
+
+    if (parsed > stock) {
+      input.value = String(stock);
+      this.cart.setQuantity(productId, stock);
+      this.toastService.info(`Tope de existencias: máximo ${stock} unidades.`);
+      return;
+    }
+
+    this.cart.setQuantity(productId, parsed);
+  }
+
+  protected onQuantityChange(productId: string, stock: number, event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+
+    const raw = input.value.trim();
+    if (raw === '' || raw === '0') {
+      if (raw === '0') {
+        this.cart.remove(productId);
+        this.toastService.info('Producto retirado del carrito.');
+        return;
+      }
+      const current = this.cart.quantityOf(productId);
+      input.value = String(current > 0 ? current : 1);
+      return;
+    }
+
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed) || parsed < 1) {
+      input.value = '1';
+      this.cart.setQuantity(productId, 1);
+      return;
+    }
+
+    const clamped = Math.min(parsed, stock);
+    input.value = String(clamped);
+    this.cart.setQuantity(productId, clamped);
+
+    if (parsed > stock) {
+      this.toastService.info(`Ajustado al stock máximo disponible (${stock} unidades).`);
+    }
   }
 
   protected async removeLine(productId: string, name: string): Promise<void> {

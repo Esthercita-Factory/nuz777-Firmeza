@@ -16,6 +16,8 @@ public sealed class SaleService : ISaleService
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly Receipts.IReceiptService? _receiptService;
+    private readonly IMailService? _mailService;
 
     public SaleService(
         ISaleRepository sales,
@@ -23,7 +25,9 @@ public sealed class SaleService : ISaleService
         ICustomerRepository customers,
         ICurrentUserService currentUser,
         IUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        Receipts.IReceiptService? receiptService = null,
+        IMailService? mailService = null)
     {
         _clock = clock;
         _sales = sales;
@@ -31,6 +35,8 @@ public sealed class SaleService : ISaleService
         _customers = customers;
         _currentUser = currentUser;
         _unitOfWork = unitOfWork;
+        _receiptService = receiptService;
+        _mailService = mailService;
     }
 
     public async Task<Result<PagedResponse<SaleSummaryResponse>>> ListAsync(SaleQuery query, CancellationToken cancellationToken = default)
@@ -157,6 +163,37 @@ public sealed class SaleService : ISaleService
         {
             await transaction.RollbackAsync(cancellationToken);
             return Result.Failure<SaleResponse>(Error.Conflict(exception.Message));
+        }
+
+        if (_mailService is not null && !string.IsNullOrWhiteSpace(customer.Email))
+        {
+            try
+            {
+                byte[]? pdfBytes = null;
+                if (_receiptService is not null)
+                {
+                    sale.Customer = customer;
+                    foreach (var d in sale.Details)
+                    {
+                        if (productsById.TryGetValue(d.ProductId, out var prod))
+                        {
+                            d.Product = prod;
+                        }
+                    }
+                    pdfBytes = _receiptService.GenerateReceiptPdf(sale);
+                }
+
+                await _mailService.SendSaleReceiptEmailAsync(
+                    customer.Email,
+                    customer.FullName,
+                    sale,
+                    pdfBytes ?? Array.Empty<byte>(),
+                    cancellationToken);
+            }
+            catch
+            {
+                // Fallo de correo no debe tumbar la venta: se registra y se avisa en el servicio
+            }
         }
 
         var taxes = InventoryCalculator.SplitTaxInclusive(sale.Total);
@@ -389,6 +426,29 @@ public sealed class SaleService : ISaleService
         {
             await transaction.RollbackAsync(cancellationToken);
             return Result.Failure<SaleResponse>(Error.Conflict(exception.Message));
+        }
+
+        if (willBeConfirmed && !wasConfirmed && _mailService is not null && !string.IsNullOrWhiteSpace(customer.Email))
+        {
+            try
+            {
+                byte[]? pdfBytes = null;
+                if (_receiptService is not null)
+                {
+                    pdfBytes = _receiptService.GenerateReceiptPdf(sale);
+                }
+
+                await _mailService.SendSaleReceiptEmailAsync(
+                    customer.Email,
+                    customer.FullName,
+                    sale,
+                    pdfBytes ?? Array.Empty<byte>(),
+                    cancellationToken);
+            }
+            catch
+            {
+                // Fallo de correo no debe tumbar la venta: se registra y se avisa en el servicio
+            }
         }
 
         return Result.Success(ToResponse(sale));

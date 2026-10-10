@@ -38,3 +38,5 @@ public class CustomerSignupRequest
     /// <summary>Cliente generado al aprobar. Null mientras esta pendiente o descartada.</summary>
     public Guid? CustomerId { get; set; }
 }
+
+

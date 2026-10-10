@@ -61,13 +61,23 @@ public sealed class CustomersController : ControllerBase
     public async Task<ActionResult<CustomerResponse>> Update(Guid id, [FromBody] CustomerRequest request, CancellationToken cancellationToken)
         => Ok(await _customers.UpdateAsync(id, request, cancellationToken));
 
-    /// <summary>Elimina un cliente sin ventas asociadas.</summary>
+    /// <summary>Obtiene la cantidad de ventas asociadas a un cliente.</summary>
+    [HttpGet("{id:guid}/sales-count")]
+    [ProducesResponseType(typeof(CustomerSalesCountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CustomerSalesCountResponse>> GetSalesCount(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _customers.GetSalesCountAsync(id, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : new ObjectResult(result);
+    }
+
+    /// <summary>Elimina un cliente. Con force=true, elimina tambien sus ventas asociadas.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] bool force = false, CancellationToken cancellationToken = default)
     {
-        var result = await _customers.DeleteAsync(id, cancellationToken);
+        var result = await _customers.DeleteAsync(id, force, cancellationToken);
 
         return result.IsSuccess ? NoContent() : new ObjectResult(result) { StatusCode = StatusCodes.Status409Conflict };
     }

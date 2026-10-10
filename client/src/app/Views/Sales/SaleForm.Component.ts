@@ -169,7 +169,7 @@ interface SaleLineDraft {
             </div>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-4 py-2 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-100 active:scale-95"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-500 active:scale-95 cursor-pointer"
               (click)="addLine()"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5">
@@ -271,10 +271,13 @@ interface SaleLineDraft {
                         <span>No hay materiales agregados en esta orden.</span>
                         <button
                           type="button"
-                          class="mt-1 text-xs font-bold text-blue-600 hover:text-blue-500"
+                          class="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-500 active:scale-95 cursor-pointer"
                           (click)="addLine()"
                         >
-                          + Agregar primer producto
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                          Agregar primer producto
                         </button>
                       </div>
                     </td>

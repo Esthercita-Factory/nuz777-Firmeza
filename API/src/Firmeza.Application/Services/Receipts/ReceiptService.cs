@@ -43,8 +43,11 @@ public sealed class ReceiptService : IReceiptService
                 page.Margin(28);
                 page.DefaultTextStyle(x => x.FontSize(9).FontColor("#1e293b"));
 
-                page.Header().Element(c => ComposeHeader(c, sale));
-                page.Content().Element(c => ComposeContent(c, sale, subtotalBase, iva, culture));
+                page.Content().Column(col =>
+                {
+                    col.Item().Element(c => ComposeHeader(c, sale));
+                    col.Item().Element(c => ComposeContent(c, sale, subtotalBase, iva, culture));
+                });
                 page.Footer().Element(ComposeFooter);
             });
         });
@@ -87,11 +90,11 @@ public sealed class ReceiptService : IReceiptService
     {
         container.Column(col =>
         {
-            // Barra superior decorativa corporativa (Azul marino + Ámbar)
+            // Barra superior decorativa corporativa (Azul marino + Azul Real)
             col.Item().PaddingBottom(12).Row(bar =>
             {
                 bar.RelativeItem(4).Height(4).Background("#0f172a");
-                bar.RelativeItem(1).Height(4).Background("#d97706");
+                bar.RelativeItem(1).Height(4).Background("#2563eb");
             });
 
             // Cabecera principal: Marca a la izquierda, Tarjeta de comprobante a la derecha
@@ -102,12 +105,12 @@ public sealed class ReceiptService : IReceiptService
                 {
                     brand.Item().Row(r =>
                     {
-                        r.AutoItem().Border(1).BorderColor("#0f172a").Background("#0f172a").PaddingHorizontal(7).PaddingVertical(3)
+                        r.AutoItem().Border(1).BorderColor("#1d4ed8").Background("#1d4ed8").PaddingHorizontal(8).PaddingVertical(3)
                             .Text("F").FontSize(14).ExtraBold().FontColor("#ffffff");
                         r.RelativeItem().PaddingLeft(8).Column(c =>
                         {
                             c.Item().Text("FIRMEZA").FontSize(20).ExtraBold().FontColor("#0f172a");
-                            c.Item().Text("MATERIALES DE CONSTRUCCIÓN & ACABADOS").FontSize(7.5f).Bold().FontColor("#d97706");
+                            c.Item().Text("MATERIALES DE CONSTRUCCIÓN & ACABADOS").FontSize(7.5f).Bold().FontColor("#2563eb");
                         });
                     });
 
@@ -120,23 +123,23 @@ public sealed class ReceiptService : IReceiptService
                 // Tarjeta de identificación del documento
                 row.ConstantItem(210).Column(cardCol =>
                 {
-                    cardCol.Item().Border(1).BorderColor("#cbd5e1").Background("#f8fafc").Padding(10).Column(card =>
+                    cardCol.Item().Border(1).BorderColor("#bfdbfe").Background("#f0f7ff").Padding(10).Column(card =>
                     {
                         card.Item().Row(r =>
                         {
                             r.RelativeItem().Text("COMPROBANTE DE VENTA").FontSize(8.5f).ExtraBold().FontColor("#0f172a");
-                            r.AutoItem().Background("#e2e8f0").PaddingHorizontal(4).PaddingVertical(1)
-                                .Text("OFICIAL").FontSize(6.5f).Bold().FontColor("#334155");
+                            r.AutoItem().Background("#dbeafe").PaddingHorizontal(5).PaddingVertical(1)
+                                .Text("OFICIAL").FontSize(6.5f).Bold().FontColor("#1e40af");
                         });
 
-                        card.Item().PaddingTop(3).Text($"No. {sale.SaleNumber}").FontSize(14).ExtraBold().FontColor("#d97706");
+                        card.Item().PaddingTop(3).Text($"No. {sale.SaleNumber}").FontSize(14).ExtraBold().FontColor("#1d4ed8");
                         card.Item().PaddingTop(3).Text($"Fecha: {sale.SaleDate.ToLocalTime():dd/MM/yyyy HH:mm}").FontSize(8).FontColor("#475569");
 
                         var (bgColor, textColor, statusText) = sale.Status switch
                         {
                             SaleStatus.Confirmed => ("#ecfdf5", "#065f46", "CONFIRMADA"),
                             SaleStatus.Delivered => ("#ecfdf5", "#065f46", "ENTREGADA"),
-                            SaleStatus.Pending => ("#fffbeb", "#92400e", "PENDIENTE"),
+                            SaleStatus.Pending => ("#eff6ff", "#1d4ed8", "PENDIENTE"),
                             SaleStatus.Cancelled => ("#fef2f2", "#991b1b", "CANCELADA"),
                             _ => ("#f1f5f9", "#334155", sale.Status.ToString().ToUpperInvariant())
                         };
@@ -162,7 +165,7 @@ public sealed class ReceiptService : IReceiptService
                     cust.Item().Row(r =>
                     {
                         r.RelativeItem().Text("DATOS DEL CLIENTE / RECEPTOR").FontSize(8.5f).ExtraBold().FontColor("#0f172a");
-                        r.AutoItem().Text("IDENTIFICACIÓN FISCAL").FontSize(7f).Bold().FontColor("#d97706");
+                        r.AutoItem().Text("IDENTIFICACIÓN FISCAL").FontSize(7f).Bold().FontColor("#2563eb");
                     });
 
                     cust.Item().PaddingTop(6).Row(r =>
@@ -216,7 +219,7 @@ public sealed class ReceiptService : IReceiptService
                     oper.Item().Row(r =>
                     {
                         r.RelativeItem().Text("DETALLES DE LA OPERACIÓN").FontSize(8.5f).ExtraBold().FontColor("#0f172a");
-                        r.AutoItem().Text("SOPORTE ERP").FontSize(7f).Bold().FontColor("#d97706");
+                        r.AutoItem().Text("SOPORTE ERP").FontSize(7f).Bold().FontColor("#2563eb");
                     });
 
                     oper.Item().PaddingTop(6).Column(c =>
@@ -245,7 +248,16 @@ public sealed class ReceiptService : IReceiptService
                 });
             });
 
-            col.Item().PaddingTop(14);
+            if (!string.IsNullOrWhiteSpace(sale.DecisionNote))
+            {
+                col.Item().PaddingTop(8).Border(1).BorderColor("#bfdbfe").Background("#eff6ff").Padding(8).Column(note =>
+                {
+                    note.Item().Text("NOTA ADMINISTRATIVA DE LA DECISIÓN:").FontSize(7.5f).Bold().FontColor("#1e40af");
+                    note.Item().PaddingTop(2).Text(sale.DecisionNote).FontSize(8).FontColor("#1e293b");
+                });
+            }
+
+            col.Item().PaddingTop(12);
 
             // Tabla de Productos con estilo corporativo
             col.Item().Table(table =>
@@ -262,17 +274,17 @@ public sealed class ReceiptService : IReceiptService
 
                 table.Header(header =>
                 {
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(4).AlignCenter()
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(4).AlignCenter()
                         .Text("#").Bold().FontSize(8.5f).FontColor("#ffffff");
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(6)
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(6)
                         .Text("Código SKU").Bold().FontSize(8.5f).FontColor("#ffffff");
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(6)
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(6)
                         .Text("Descripción del Material").Bold().FontSize(8.5f).FontColor("#ffffff");
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(4).AlignRight()
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(4).AlignRight()
                         .Text("Cant.").Bold().FontSize(8.5f).FontColor("#ffffff");
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(6).AlignRight()
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(6).AlignRight()
                         .Text("Precio Unit.").Bold().FontSize(8.5f).FontColor("#ffffff");
-                    header.Cell().Background("#0f172a").PaddingVertical(6).PaddingHorizontal(6).AlignRight()
+                    header.Cell().Background("#0f2744").PaddingVertical(6).PaddingHorizontal(6).AlignRight()
                         .Text("Subtotal").Bold().FontSize(8.5f).FontColor("#ffffff");
                 });
 
@@ -310,7 +322,7 @@ public sealed class ReceiptService : IReceiptService
                 // Notas y Condiciones
                 row.RelativeItem().PaddingRight(20).Column(notes =>
                 {
-                    notes.Item().Border(1).BorderColor("#e2e8f0").Background("#fafaf9").Padding(8).Column(c =>
+                    notes.Item().Border(1).BorderColor("#e2e8f0").Background("#f8fafc").Padding(10).Column(c =>
                     {
                         c.Item().Text("TÉRMINOS Y CONDICIONES DE SUMINISTRO:").FontSize(8).Bold().FontColor("#0f172a");
                         c.Item().PaddingTop(3).Text("• Mercancía inspeccionada y entregada a entera satisfacción del comprador.").FontSize(7.2f).FontColor("#64748b");
@@ -335,11 +347,11 @@ public sealed class ReceiptService : IReceiptService
                         r.RelativeItem().AlignRight().Text(iva.ToString("C2", culture)).FontSize(8.5f).Bold().FontColor("#334155");
                     });
 
-                    // Banner de Total Final
-                    totals.Item().PaddingTop(8).Background("#0f172a").PaddingVertical(8).PaddingHorizontal(8).Row(r =>
+                    // Banner de Total Final (Azul Real Corporativo)
+                    totals.Item().PaddingTop(8).Background("#1d4ed8").PaddingVertical(8).PaddingHorizontal(10).Row(r =>
                     {
                         r.RelativeItem().Text("TOTAL A PAGAR:").FontSize(9.5f).ExtraBold().FontColor("#ffffff");
-                        r.RelativeItem().AlignRight().Text(sale.Total.ToString("C2", culture)).FontSize(12.5f).ExtraBold().FontColor("#fbbf24");
+                        r.RelativeItem().AlignRight().Text(sale.Total.ToString("C2", culture)).FontSize(13f).ExtraBold().FontColor("#ffffff");
                     });
                 });
             });
@@ -353,15 +365,15 @@ public sealed class ReceiptService : IReceiptService
             row.RelativeItem().Column(col =>
             {
                 col.Item().Text("Firmeza S.A.S. · NIT 901.458.789-1 · Documento oficial emitido por Firmeza ERP v2.0").FontSize(7.5f).FontColor("#94a3b8");
-                col.Item().Text("Para consultas o validación de comprobantes comuníquese a soporte@firmeza.com").FontSize(7f).FontColor("#cbd5e1");
+                col.Item().Text("Para consultas o validación de comprobantes comuníquese a soporte@firmeza.com").FontSize(7f).FontColor("#94a3b8");
             });
 
             row.RelativeItem().AlignRight().Text(x =>
             {
                 x.Span("Página ").FontSize(7.5f).FontColor("#94a3b8");
-                x.CurrentPageNumber().FontSize(7.5f).Bold().FontColor("#64748b");
+                x.CurrentPageNumber().FontSize(7.5f).Bold().FontColor("#2563eb");
                 x.Span(" de ").FontSize(7.5f).FontColor("#94a3b8");
-                x.TotalPages().FontSize(7.5f).Bold().FontColor("#64748b");
+                x.TotalPages().FontSize(7.5f).Bold().FontColor("#2563eb");
             });
         });
     }

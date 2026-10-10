@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, inject, input, signal } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -138,18 +138,57 @@ import { ToastService } from '../../Services/imports.service';
                 <label for="age" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Edad (mínimo 18) <span class="text-rose-500">*</span>
                 </label>
-                <input
-                  id="age"
-                  name="age"
-                  type="number"
-                  min="18"
-                  max="120"
-                  [(ngModel)]="form.age"
-                  (keydown)="onNumericKeyDown($event, 'la edad')"
-                  placeholder="Ej.: 32"
-                  class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                  [class.border-rose-400]="fieldError('age')"
-                />
+                <div class="relative flex items-center">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
+                  <input
+                    id="age"
+                    name="age"
+                    type="number"
+                    min="18"
+                    max="120"
+                    [(ngModel)]="form.age"
+                    (keydown)="onNumericKeyDown($event, 'la edad')"
+                    placeholder="Ej.: 32"
+                    class="w-full rounded-xl border border-slate-300 bg-slate-50/50 pl-11 pr-12 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    [class.border-rose-400]="fieldError('age')"
+                  />
+                  <div class="absolute inset-y-0 right-2 flex items-center">
+                    <div class="stepper-container flex flex-col -space-y-px rounded-lg border border-slate-200 bg-white shadow-2xs overflow-hidden">
+                      <button
+                        type="button"
+                        (click)="incrementAge()"
+                        [disabled]="form.age >= 120"
+                        title="Aumentar edad"
+                        aria-label="Aumentar edad"
+                        class="stepper-btn flex h-4 w-7 items-center justify-center text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-2.5 w-2.5">
+                          <path d="m18 15-6-6-6 6" />
+                        </svg>
+                      </button>
+                      <div class="h-px bg-slate-200 dark:bg-white/10"></div>
+                      <button
+                        type="button"
+                        (click)="decrementAge()"
+                        [disabled]="form.age <= 18"
+                        title="Disminuir edad"
+                        aria-label="Disminuir edad"
+                        class="stepper-btn flex h-4 w-7 items-center justify-center text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="h-2.5 w-2.5">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 @if (fieldError('age'); as message) {
                   <p class="text-xs font-medium text-rose-600 flex items-center gap-1">
                     <span class="h-1 w-1 rounded-full bg-rose-600"></span>{{ message }}
@@ -327,8 +366,11 @@ import { ToastService } from '../../Services/imports.service';
     </div>
   `
 })
-export class CustomerFormComponent implements OnInit {
+export class CustomerFormComponent implements OnInit, OnDestroy {
   readonly id = input<string>();
+
+  private static readonly DRAFT_TTL_MS = 60 * 1000; // 1 minuto límite para conservar datos
+  private draftExpiryTimer?: ReturnType<typeof setTimeout>;
 
   private readonly customersService = inject(CustomersService);
   private readonly router = inject(Router);
@@ -438,24 +480,104 @@ export class CustomerFormComponent implements OnInit {
     }
   }
 
+  protected incrementAge(): void {
+    const current = Number(this.form.age) || 18;
+    if (current < 120) {
+      this.form.age = current + 1;
+      this.saveDraft();
+    }
+  }
+
+  protected decrementAge(): void {
+    const current = Number(this.form.age) || 18;
+    if (current > 18) {
+      this.form.age = current - 1;
+      this.saveDraft();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.draftExpiryTimer) {
+      clearTimeout(this.draftExpiryTimer);
+      this.draftExpiryTimer = undefined;
+    }
+  }
+
+  private hasFormData(): boolean {
+    return Boolean(
+      (this.form.fullName && this.form.fullName.trim()) ||
+      (this.form.document && this.form.document.trim()) ||
+      (this.form.email && this.form.email.trim()) ||
+      (this.form.phone && this.form.phone.trim()) ||
+      (this.form.address && this.form.address.trim())
+    );
+  }
+
   protected saveDraft(): void {
     queueMicrotask(() => {
       try {
-        localStorage.setItem(this.draftKey, JSON.stringify(this.form));
+        if (!this.hasFormData()) {
+          this.clearDraft();
+          return;
+        }
+
+        const draft = {
+          data: this.form,
+          savedAt: Date.now()
+        };
+        localStorage.setItem(this.draftKey, JSON.stringify(draft));
+        this.restartDraftTimer(CustomerFormComponent.DRAFT_TTL_MS);
       } catch {}
     });
+  }
+
+  private restartDraftTimer(delayMs: number): void {
+    if (this.draftExpiryTimer) {
+      clearTimeout(this.draftExpiryTimer);
+    }
+    this.draftExpiryTimer = setTimeout(() => {
+      this.handleDraftExpired();
+    }, delayMs);
+  }
+
+  private handleDraftExpired(): void {
+    if (!this.hasFormData()) return;
+
+    this.form = {
+      fullName: '',
+      document: '',
+      age: 18,
+      email: '',
+      phone: '',
+      address: '',
+      isActive: true
+    };
+    this.clearDraft();
+    this.toastService.info('Los datos del formulario se han borrado tras 1 minuto de inactividad.');
   }
 
   @HostListener('window:beforeunload')
   protected onBeforeUnload(): void {
     try {
-      localStorage.setItem(this.draftKey, JSON.stringify(this.form));
+      if (!this.hasFormData()) {
+        this.clearDraft();
+        return;
+      }
+      const draft = {
+        data: this.form,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(this.draftKey, JSON.stringify(draft));
     } catch {}
   }
 
   protected clearDraft(): void {
     try {
       localStorage.removeItem(this.draftKey);
+      if (this.draftExpiryTimer) {
+        clearTimeout(this.draftExpiryTimer);
+        this.draftExpiryTimer = undefined;
+      }
     } catch {}
   }
 
@@ -463,14 +585,35 @@ export class CustomerFormComponent implements OnInit {
     try {
       const raw = localStorage.getItem(this.draftKey);
       if (!raw) return;
-      const data = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+
+      const data = parsed.data ?? parsed;
+      const savedAt = typeof parsed.savedAt === 'number' ? parsed.savedAt : 0;
+      const elapsed = Date.now() - savedAt;
+
+      // Si pasaron 60 segundos (1 minuto) o más, se borra el borrador
+      if (savedAt > 0 && elapsed >= CustomerFormComponent.DRAFT_TTL_MS) {
+        this.clearDraft();
+        return;
+      }
+
       if (data && typeof data === 'object') {
         this.form = {
           ...this.form,
           ...data
         };
       }
-    } catch {}
+
+      if (this.hasFormData()) {
+        const remaining = savedAt > 0
+          ? Math.max(1000, CustomerFormComponent.DRAFT_TTL_MS - elapsed)
+          : CustomerFormComponent.DRAFT_TTL_MS;
+        this.restartDraftTimer(remaining);
+      }
+    } catch {
+      this.clearDraft();
+    }
   }
 
   protected fieldError(field: string): string | null {

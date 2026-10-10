@@ -3,7 +3,7 @@ using Firmeza.Domain.Entities;
 
 namespace Firmeza.Application.Abstractions;
 
-public sealed record ProductFilter(string? Term, bool OnlyActive);
+public sealed record ProductFilter(string? Term, bool OnlyActive, string? Category = null);
 
 public interface IProductRepository
 {

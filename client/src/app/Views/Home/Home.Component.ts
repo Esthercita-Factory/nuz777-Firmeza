@@ -2,10 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../Services/auth.service';
 import { LogoComponent } from '../Layout/Shell.Component';
+import { ThemeToggleComponent } from '../Shared/ThemeToggle.Component';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, LogoComponent],
+  imports: [RouterLink, LogoComponent, ThemeToggleComponent],
   template: `
     <!-- Barra de navegación superior fija con efecto frosted glass -->
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md shadow-xs">
@@ -32,6 +33,7 @@ import { LogoComponent } from '../Layout/Shell.Component';
         </nav>
 
         <div class="flex items-center gap-3">
+          <app-theme-toggle size="sm" />
           <a
             routerLink="/login"
             class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-blue-600"

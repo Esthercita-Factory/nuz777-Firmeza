@@ -1,17 +1,21 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { toApiError } from '../../Services/Api.Service';
 import { Product, ProductsService } from '../../Services/products.service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { ImportsService, ToastService } from '../../Services/imports.service';
 import { IconComponent } from '../Shared/Icon.Component';
+import { SkylineBackgroundComponent } from '../Shared/SkylineBackground.Component';
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, CurrencyPipe, DatePipe, IconComponent],
+  imports: [RouterLink, CurrencyPipe, DatePipe, IconComponent, SkylineBackgroundComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mx-auto max-w-4xl">
+    <div class="relative min-h-[calc(100vh-14rem)] pb-12">
+      <app-skyline-background />
+      <div class="relative z-10 mx-auto max-w-4xl">
       @if (errorMessage(); as message) {
         <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">{{ message }}</div>
       }
@@ -102,6 +106,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </div>
         </div>
       }
+      </div>
     </div>
   `
 })

@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, Subscription, catchError, filter, interval, of, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -143,6 +143,8 @@ export class AdminNotificationService implements OnDestroy {
     }
   }
 
+  private readonly ngZone = inject(NgZone);
+
   /**
    * Inicia el sondeo continuo de solicitudes pendientes si el usuario actual es administrador.
    * Sondea cada 3 segundos para que los pedidos de otros navegadores/dispositivos
@@ -153,19 +155,23 @@ export class AdminNotificationService implements OnDestroy {
       return;
     }
 
-    this.pollSubscription = interval(3000)
-      .pipe(
-        filter(() => this.authService.isAuthenticated() && this.authService.isAdministrator()),
-        switchMap(() =>
-          this.dashboardService.getDashboardData().pipe(
-            catchError(() => of(null))
+    this.ngZone.runOutsideAngular(() => {
+      this.pollSubscription = interval(3000)
+        .pipe(
+          filter(() => this.authService.isAuthenticated() && this.authService.isAdministrator()),
+          switchMap(() =>
+            this.dashboardService.getDashboardData().pipe(
+              catchError(() => of(null))
+            )
           )
         )
-      )
-      .subscribe((data) => {
-        if (!data) return;
-        this.processPendingCount(data.pendingSaleCount);
-      });
+        .subscribe((data) => {
+          if (!data) return;
+          this.ngZone.run(() => {
+            this.processPendingCount(data.pendingSaleCount);
+          });
+        });
+    });
   }
 
   /**

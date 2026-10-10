@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IconComponent } from '../Shared/Icon.Component';
@@ -11,6 +11,7 @@ import { Product, ProductsService } from '../../Services/products.service';
 @Component({
   selector: 'app-products',
   imports: [IconComponent, FormsModule, RouterLink, CurrencyPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -34,7 +35,7 @@ import { Product, ProductsService } from '../../Services/products.service';
           </svg>
           Exportar PDF
         </button>
-        <a routerLink="/productos/nuevo" class="rounded-xl bg-blue-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-blue-100 transition hover:bg-blue-300">
+        <a routerLink="/productos/nuevo" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-500 active:scale-95">
           + Nuevo producto
         </a>
       </div>
@@ -73,8 +74,8 @@ import { Product, ProductsService } from '../../Services/products.service';
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (product of products(); track product.id) {
-              <tr [class]="product.isActive ? 'hover:bg-blue-50/40' : 'bg-slate-50 text-slate-400'">
-                <td class="px-6 py-4 font-mono text-xs font-bold text-blue-700">{{ product.sku }}</td>
+              <tr [class]="product.isActive ? 'hover:bg-slate-50/70' : 'bg-slate-50 text-slate-400'">
+                <td class="px-6 py-4 font-mono text-xs font-bold text-slate-900">{{ product.sku }}</td>
                 <td class="px-6 py-4">
                   <p class="font-bold text-slate-900">{{ product.name }}</p>
                   <p class="text-xs text-slate-500">Por {{ product.unit }}</p>

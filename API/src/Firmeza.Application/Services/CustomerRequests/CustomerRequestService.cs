@@ -13,19 +13,22 @@ public sealed class CustomerRequestService : ICustomerRequestService
     private readonly ICurrentUserService _currentUser;
     private readonly IClock _clock;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMailService? _mailService;
 
     public CustomerRequestService(
         ICustomerRequestRepository requests,
         ICustomerRepository customers,
         ICurrentUserService currentUser,
         IClock clock,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IMailService? mailService = null)
     {
         _requests = requests;
         _customers = customers;
         _currentUser = currentUser;
         _clock = clock;
         _unitOfWork = unitOfWork;
+        _mailService = mailService;
     }
 
     public async Task<Result<PagedResponse<CustomerRequestResponse>>> ListAsync(
@@ -97,6 +100,21 @@ public sealed class CustomerRequestService : ICustomerRequestService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        if (_mailService is not null && !string.IsNullOrWhiteSpace(customer.Email))
+        {
+            try
+            {
+                await _mailService.SendAccountApprovedEmailAsync(
+                    customer.Email,
+                    customer.FullName,
+                    cancellationToken);
+            }
+            catch
+            {
+                // Fallo de correo no interrumpe la aprobación
+            }
+        }
 
         return Result.Success(new CustomerRequestReviewResponse(
             request.Id,

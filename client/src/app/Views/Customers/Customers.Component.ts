@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { IconComponent } from '../Shared/Icon.Component';
 import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
@@ -10,6 +11,7 @@ import { ImportsService, ToastService } from '../../Services/imports.service';
 @Component({
   selector: 'app-customers',
   imports: [IconComponent, FormsModule, RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -33,7 +35,7 @@ import { ImportsService, ToastService } from '../../Services/imports.service';
           </svg>
           Exportar PDF
         </button>
-        <a routerLink="/clientes/nuevo" class="rounded-xl bg-blue-400 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-blue-100 transition hover:bg-blue-300">
+        <a routerLink="/clientes/nuevo" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-500 active:scale-95">
           + Nuevo cliente
         </a>
       </div>
@@ -71,7 +73,7 @@ import { ImportsService, ToastService } from '../../Services/imports.service';
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (customer of customers(); track customer.id) {
-              <tr [class]="customer.isActive ? 'hover:bg-blue-50/40' : 'bg-slate-50 text-slate-400'">
+              <tr [class]="customer.isActive ? 'hover:bg-slate-50/70' : 'bg-slate-50 text-slate-400'">
                 <td class="px-6 py-4">
                   <p class="font-bold text-slate-900">{{ customer.fullName }}</p>
                   <p class="text-xs text-slate-500">{{ customer.email }}</p>
@@ -170,9 +172,34 @@ export class CustomersComponent implements OnInit {
   }
 
   protected async remove(customer: Customer): Promise<void> {
+    try {
+      const salesInfo = await firstValueFrom(this.customersService.getSalesCount(customer.id));
+      if (salesInfo.hasSales) {
+        const confirmed = await this.confirmService.confirm({
+          title: 'Advertencia: Cliente con ventas asociadas',
+          message: `El cliente "${customer.fullName}" tiene ${salesInfo.salesCount} venta(s) asociada(s). Si continúas, se eliminará el cliente junto con sus ventas asociadas. ¿Deseas eliminarlo de todos modos?`,
+          confirmLabel: 'Sí, eliminar de todos modos',
+          cancelLabel: 'Cancelar',
+          tone: 'warning'
+        });
+        if (!confirmed) return;
+
+        this.customersService.delete(customer.id, true).subscribe({
+          next: () => {
+            this.toastService.success('Cliente y ventas asociadas eliminados.');
+            this.load();
+          },
+          error: (error) => this.toastService.error(toApiError(error).message)
+        });
+        return;
+      }
+    } catch {
+      // Si la consulta de ventas falla, se mantiene el flujo de confirmación habitual
+    }
+
     const confirmed = await this.confirmService.confirm({
       title: 'Eliminar cliente',
-      message: `¿Eliminar a ${customer.fullName}? Esta accion no se puede deshacer.`
+      message: `¿Eliminar a ${customer.fullName}? Esta acción no se puede deshacer.`
     });
     if (!confirmed) return;
 
@@ -181,7 +208,30 @@ export class CustomersComponent implements OnInit {
         this.toastService.success('Cliente eliminado.');
         this.load();
       },
-      error: (error) => this.toastService.error(toApiError(error).message)
+      error: async (error) => {
+        const apiError = toApiError(error);
+        if (error.status === 409) {
+          const forceConfirm = await this.confirmService.confirm({
+            title: 'Advertencia: Cliente con ventas asociadas',
+            message: `El cliente "${customer.fullName}" tiene ventas asociadas. ¿Deseas eliminarlo de todos modos junto con sus ventas?`,
+            confirmLabel: 'Sí, eliminar de todos modos',
+            cancelLabel: 'Cancelar',
+            tone: 'warning'
+          });
+          if (forceConfirm) {
+            this.customersService.delete(customer.id, true).subscribe({
+              next: () => {
+                this.toastService.success('Cliente y ventas asociadas eliminados.');
+                this.load();
+              },
+              error: (err) => this.toastService.error(toApiError(err).message)
+            });
+            return;
+          }
+        } else {
+          this.toastService.error(apiError.message);
+        }
+      }
     });
   }
 

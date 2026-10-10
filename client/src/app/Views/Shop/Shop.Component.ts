@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -11,6 +11,11 @@ import { ToastService } from '../../Services/imports.service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { IconComponent } from '../Shared/Icon.Component';
 
+export interface CatalogProduct extends Product {
+  readonly image: string;
+  readonly stockPercentage: number;
+}
+
 /**
  * Catálogo profesional del portal del cliente con diseño arquitectónico,
  * fondo de edificios, búsqueda en tiempo real, filtros por categoría y control
@@ -19,6 +24,7 @@ import { IconComponent } from '../Shared/Icon.Component';
 @Component({
   selector: 'app-shop',
   imports: [FormsModule, RouterLink, CurrencyPipe, IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-8">
       <!-- HERO BANNER CON SKYLINE Y RESUMEN DEL PEDIDO -->
@@ -143,7 +149,7 @@ import { IconComponent } from '../Shared/Icon.Component';
       </section>
 
       <!-- BARRA DE BÚSQUEDA Y FILTRADO AVANZADO -->
-      <section class="rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-sm backdrop-blur-md space-y-4">
+      <section class="rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-sm space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <!-- Input de búsqueda -->
           <form class="relative flex-1" (ngSubmit)="search()">
@@ -155,7 +161,8 @@ import { IconComponent } from '../Shared/Icon.Component';
             </span>
             <input
               name="q"
-              [(ngModel)]="queryText"
+              [ngModel]="queryText"
+              (ngModelChange)="onQueryTextChange($event)"
               placeholder="Buscar por código SKU, nombre o especificación (ej.: CEM-001, Cemento, Tubo)..."
               class="w-full rounded-2xl border border-slate-300 bg-slate-50/60 py-3 pl-10 pr-24 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
             />
@@ -266,35 +273,36 @@ import { IconComponent } from '../Shared/Icon.Component';
         <!-- REJILLA DE PRODUCTOS DEL CATÁLOGO -->
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           @for (product of displayedProducts(); track product.id) {
-            <article class="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10">
+            <article class="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-1.5 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 will-change-transform">
               <div>
                 <!-- CABECERA VISUAL / FOTOGRAFÍA REAL DEL MATERIAL -->
                 <div class="relative flex h-64 w-full flex-col justify-between overflow-hidden rounded-2xl p-3 border border-slate-200/80 bg-slate-100 shadow-inner group/img">
                   <!-- Imagen contextual real del producto según su tipo/material -->
                   <img
-                    [src]="getProductImage(product)"
+                    [src]="product.image"
                     [alt]="product.name"
                     loading="lazy"
+                    decoding="async"
                     (error)="onImageError($event)"
-                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                   />
 
                   <!-- Degradado de contraste para legibilidad de textos y chips sobre la fotografía -->
-                  <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-slate-950/50"></div>
+                  <div class="pointer-events-none absolute inset-0 card-image-overlay product-card-overlay bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-slate-950/50"></div>
 
                   <!-- Chips superiores: SKU y Disponibilidad -->
                   <div class="relative z-10 flex items-center justify-between gap-2">
-                    <span class="rounded-lg bg-white/95 px-2 py-0.5 font-mono text-[10px] font-black text-slate-800 shadow-sm border border-white/60 backdrop-blur-md">
+                    <span class="rounded-lg bg-white/95 px-2 py-0.5 font-mono text-[10px] font-black text-slate-800 shadow-sm border border-white/60">
                       {{ product.sku }}
                     </span>
 
                     <span
-                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-sm text-white backdrop-blur-md"
+                      class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-sm text-white"
                       [class]="product.stock > 10
-                        ? 'bg-emerald-600/90 ring-1 ring-emerald-400/60'
+                        ? 'bg-emerald-600/95 ring-1 ring-emerald-400/60'
                         : product.stock > 0
-                          ? 'bg-amber-600/90 ring-1 ring-amber-400/60'
-                          : 'bg-rose-600/90 ring-1 ring-rose-400/60'"
+                          ? 'bg-amber-600/95 ring-1 ring-amber-400/60'
+                          : 'bg-rose-600/95 ring-1 ring-rose-400/60'"
                     >
                       @if (product.stock > 0) {
                         <span class="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
@@ -305,10 +313,10 @@ import { IconComponent } from '../Shared/Icon.Component';
 
                   <!-- Pie de la cabecera visual: Categoría y Unidad sobre la imagen -->
                   <div class="relative z-10 flex items-center justify-between text-[11px] font-bold text-white drop-shadow-sm">
-                    <span class="rounded-md bg-slate-950/75 px-2 py-0.5 border border-white/15 backdrop-blur-md">
+                    <span class="rounded-md bg-slate-950/80 px-2 py-0.5 border border-white/15">
                       {{ product.category }}
                     </span>
-                    <span class="rounded-md bg-slate-950/75 px-2 py-0.5 border border-white/15 backdrop-blur-md">
+                    <span class="rounded-md bg-slate-950/80 px-2 py-0.5 border border-white/15">
                       x {{ product.unit }}
                     </span>
                   </div>
@@ -354,9 +362,9 @@ import { IconComponent } from '../Shared/Icon.Component';
                   </div>
                   <div class="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                     <div
-                      class="h-full rounded-full transition-all duration-500"
+                      class="h-full rounded-full transition-all duration-300"
                       [class]="product.stock > 10 ? 'bg-emerald-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-rose-500'"
-                      [style.width.%]="stockPercentage(product)"
+                      [style.width.%]="product.stockPercentage"
                     ></div>
                   </div>
                 </div>
@@ -364,23 +372,37 @@ import { IconComponent } from '../Shared/Icon.Component';
                 <!-- ACCIONES DE COMPRA -->
                 <div class="mt-4">
                   @if (cart.quantityOf(product.id) > 0) {
-                    <!-- Control interactivo: en carrito -->
-                    <div class="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/70 p-1">
+                    <!-- Control interactivo: en carrito con stepper y tipeo numérico directo -->
+                    <div class="flex items-center justify-between gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 p-1.5 shadow-2xs">
                       <button
                         type="button"
                         (click)="decrementCart(product)"
-                        class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 font-black shadow-xs transition hover:bg-slate-100 active:scale-95"
-                        title="Quitar una unidad"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white font-black text-slate-700 shadow-xs transition hover:bg-slate-100 hover:text-blue-600 active:scale-95"
+                        [title]="cart.quantityOf(product.id) === 1 ? 'Quitar del carrito' : 'Restar una unidad'"
                       >
-                        −
+                        <span class="text-base leading-none">−</span>
                       </button>
 
-                      <div class="text-center px-2">
-                        <span class="block text-xs font-black text-blue-900 leading-tight">
-                          {{ cart.quantityOf(product.id) }} en carrito
-                        </span>
-                        <span class="block text-[9px] font-semibold text-blue-600">
-                          máx. {{ product.stock }}
+                      <div class="flex flex-1 flex-col items-center justify-center px-1">
+                        <div class="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            min="1"
+                            [max]="product.stock"
+                            [value]="cart.quantityOf(product.id)"
+                            (focus)="onQuantityFocus($event)"
+                            (input)="onQuantityInput(product, $event)"
+                            (change)="onQuantityChange(product, $event)"
+                            (keydown.enter)="onQuantityEnter($event)"
+                            class="h-8 w-16 rounded-lg border border-blue-200 bg-white px-1 text-center font-mono text-sm font-black text-blue-950 shadow-inner outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-400/40"
+                            [attr.aria-label]="'Cantidad de ' + product.name"
+                          />
+                          <span class="text-[11px] font-bold text-blue-900 truncate max-w-[65px]" [title]="product.unit">
+                            {{ product.unit }}
+                          </span>
+                        </div>
+                        <span class="mt-0.5 text-[9px] font-semibold text-blue-600">
+                          máx. {{ product.stock }} disponible{{ product.stock === 1 ? '' : 's' }}
                         </span>
                       </div>
 
@@ -388,10 +410,10 @@ import { IconComponent } from '../Shared/Icon.Component';
                         type="button"
                         (click)="incrementCart(product)"
                         [disabled]="cart.quantityOf(product.id) >= product.stock"
-                        class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-black shadow-xs transition hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 font-black text-white shadow-xs transition hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                         title="Agregar una unidad más"
                       >
-                        +
+                        <span class="text-base leading-none">+</span>
                       </button>
                     </div>
                   } @else {
@@ -488,7 +510,12 @@ export class ShopComponent implements OnInit, OnDestroy {
   private readonly confirmService = inject(ConfirmService);
 
   private static readonly CAPACITIES_KEY = 'firmeza_product_capacities';
+  private static capacitiesCache: Record<string, number> | null = null;
+  private static capacitiesDirty = false;
+  private static capacitiesSaveTimeout?: ReturnType<typeof setTimeout>;
+
   private stockChangeSub?: Subscription;
+  private searchDebounceTimeout?: ReturnType<typeof setTimeout>;
 
   protected readonly products = signal<Product[]>([]);
   protected readonly loading = signal(false);
@@ -526,8 +553,8 @@ export class ShopComponent implements OnInit, OnDestroy {
     return ['all', ...Array.from(set)];
   });
 
-  /** Lista calculada con filtros locales de ordenamiento y existencias */
-  protected readonly displayedProducts = computed(() => {
+  /** Lista calculada con filtros locales de ordenamiento y existencias, con view-model precalculado para alto rendimiento */
+  protected readonly displayedProducts = computed<CatalogProduct[]>(() => {
     let list = [...this.products()];
 
     if (this.onlyInStock()) {
@@ -545,7 +572,11 @@ export class ShopComponent implements OnInit, OnDestroy {
       list.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return list;
+    return list.map((p) => ({
+      ...p,
+      image: this.getProductImage(p),
+      stockPercentage: this.stockPercentage(p)
+    }));
   });
 
   ngOnInit(): void {
@@ -557,15 +588,37 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+    }
+    ShopComponent.flushCapacities();
     this.stockChangeSub?.unsubscribe();
   }
 
+  protected onQueryTextChange(value: string): void {
+    this.queryText = value;
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+    }
+    this.searchDebounceTimeout = setTimeout(() => {
+      this.search();
+    }, 300);
+  }
+
   protected search(): void {
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+      this.searchDebounceTimeout = undefined;
+    }
     this.page.set(1);
     this.load();
   }
 
   protected clearSearch(): void {
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+      this.searchDebounceTimeout = undefined;
+    }
     this.queryText = '';
     this.page.set(1);
     this.load();
@@ -590,6 +643,10 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   protected resetFilters(): void {
+    if (this.searchDebounceTimeout) {
+      clearTimeout(this.searchDebounceTimeout);
+      this.searchDebounceTimeout = undefined;
+    }
     this.queryText = '';
     this.selectedCategory.set('all');
     this.onlyInStock.set(false);
@@ -603,36 +660,53 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.load();
   }
 
+  private static getCapacities(): Record<string, number> {
+    if (!ShopComponent.capacitiesCache) {
+      try {
+        const raw = localStorage.getItem(ShopComponent.CAPACITIES_KEY);
+        ShopComponent.capacitiesCache = raw ? JSON.parse(raw) : {};
+      } catch {
+        ShopComponent.capacitiesCache = {};
+      }
+    }
+    return ShopComponent.capacitiesCache!;
+  }
+
+  private static scheduleSaveCapacities(): void {
+    if (ShopComponent.capacitiesSaveTimeout) return;
+    ShopComponent.capacitiesSaveTimeout = setTimeout(() => {
+      ShopComponent.capacitiesSaveTimeout = undefined;
+      ShopComponent.flushCapacities();
+    }, 250);
+  }
+
+  private static flushCapacities(): void {
+    if (ShopComponent.capacitiesCache && ShopComponent.capacitiesDirty) {
+      try {
+        localStorage.setItem(ShopComponent.CAPACITIES_KEY, JSON.stringify(ShopComponent.capacitiesCache));
+        ShopComponent.capacitiesDirty = false;
+      } catch {
+        // Ignorar fallback
+      }
+    }
+  }
+
   /**
    * Obtiene o calcula la capacidad de referencia (tope visual) para el producto.
-   * Si las existencias disminuyen (por compras confirmadas), la capacidad de referencia se mantiene,
-   * permitiendo que la barra visual baje de forma visible y proporcional.
-   * Si el administrador reabastece el producto a una cantidad mayor, la capacidad sube acordemente.
+   * Utiliza caché en memoria para evitar accesos síncronos a localStorage en render.
    */
   private getCapacityFor(productId: string, currentStock: number): number {
     if (currentStock <= 0) return 1;
 
-    let capacities: Record<string, number> = {};
-    try {
-      const raw = localStorage.getItem(ShopComponent.CAPACITIES_KEY);
-      if (raw) {
-        capacities = JSON.parse(raw);
-      }
-    } catch {
-      // Ignorar fallback si localStorage no está disponible
-    }
-
+    const capacities = ShopComponent.getCapacities();
     const saved = capacities[productId];
     const nominalMilestone = this.calculateMilestone(currentStock);
     const capacity = Math.max(saved ?? 0, nominalMilestone, currentStock);
 
     if (saved !== capacity) {
       capacities[productId] = capacity;
-      try {
-        localStorage.setItem(ShopComponent.CAPACITIES_KEY, JSON.stringify(capacities));
-      } catch {
-        // Ignorar fallback
-      }
+      ShopComponent.capacitiesDirty = true;
+      ShopComponent.scheduleSaveCapacities();
     }
 
     return capacity;
@@ -654,10 +728,23 @@ export class ShopComponent implements OnInit, OnDestroy {
     return Math.min(100, Math.max(6, pct));
   }
 
+  private static readonly imageCache = new Map<string, string>();
+
   /**
    * Obtiene la ruta de la fotografía representativa según el material, categoría o SKU.
+   * Cuenta con memoización para alto rendimiento.
    */
   protected getProductImage(product: Product): string {
+    const key = `${product.id || ''}_${product.sku || ''}_${product.name || ''}_${product.category || ''}`;
+    const cached = ShopComponent.imageCache.get(key);
+    if (cached) return cached;
+
+    const computedImage = this.computeProductImage(product);
+    ShopComponent.imageCache.set(key, computedImage);
+    return computedImage;
+  }
+
+  private computeProductImage(product: Product): string {
     const text = `${product.sku || ''} ${product.name || ''} ${product.category || ''} ${product.description || ''}`.toLowerCase();
 
     if (text.includes('cemento') || text.includes('concreto') || text.includes('mortero') || text.includes('cem-')) {
@@ -778,20 +865,89 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.cart.decrement(product.id);
   }
 
+  protected onQuantityFocus(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (input) {
+      input.select();
+    }
+  }
+
+  protected onQuantityEnter(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (input) {
+      input.blur();
+    }
+  }
+
+  protected onQuantityInput(product: Product, event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+
+    const raw = input.value.trim();
+    if (raw === '') {
+      return;
+    }
+
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed) || parsed < 1) {
+      return;
+    }
+
+    if (parsed > product.stock) {
+      input.value = String(product.stock);
+      this.cart.setQuantity(product.id, product.stock);
+      this.toastService.info(`Tope de existencias: máximo ${product.stock} ${product.unit}s.`);
+      return;
+    }
+
+    this.cart.setQuantity(product.id, parsed);
+  }
+
+  protected onQuantityChange(product: Product, event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (!input) return;
+
+    const raw = input.value.trim();
+    if (raw === '' || raw === '0') {
+      if (raw === '0') {
+        this.cart.remove(product.id);
+        this.toastService.info(`${product.name} retirado del carrito.`);
+        return;
+      }
+      const current = this.cart.quantityOf(product.id);
+      input.value = String(current > 0 ? current : 1);
+      return;
+    }
+
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed) || parsed < 1) {
+      input.value = '1';
+      this.cart.setQuantity(product.id, 1);
+      return;
+    }
+
+    const clamped = Math.min(parsed, product.stock);
+    input.value = String(clamped);
+    this.cart.setQuantity(product.id, clamped);
+
+    if (parsed > product.stock) {
+      this.toastService.info(`Ajustado al stock máximo disponible (${product.stock} ${product.unit}s).`);
+    }
+  }
+
   private load(silent = false): void {
     if (!silent) {
       this.loading.set(true);
     }
     this.errorMessage.set(null);
 
-    let qParam = this.queryText.trim();
-    if (this.selectedCategory() !== 'all') {
-      qParam = qParam ? `${qParam} ${this.selectedCategory()}` : this.selectedCategory();
-    }
+    const qParam = this.queryText.trim();
+    const catParam = this.selectedCategory() !== 'all' ? this.selectedCategory() : undefined;
 
     this.productsService
       .list({
         q: qParam || undefined,
+        category: catParam,
         onlyActive: true,
         page: this.page(),
         pageSize: 12

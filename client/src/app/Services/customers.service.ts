@@ -17,6 +17,11 @@ export interface Customer {
   updatedAt: string | null;
 }
 
+export interface CustomerSalesCount {
+  salesCount: number;
+  hasSales: boolean;
+}
+
 export interface CustomerRequest {
   document: string;
   fullName: string;
@@ -63,8 +68,14 @@ export class CustomersService {
     return this.http.put<Customer>(`${this.baseUrl}/${id}`, request);
   }
 
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  delete(id: string, force: boolean = false): Observable<void> {
+    let params = new HttpParams();
+    if (force) params = params.set('force', 'true');
+    return this.http.delete<void>(`${this.baseUrl}/${id}`, { params });
+  }
+
+  getSalesCount(id: string): Observable<CustomerSalesCount> {
+    return this.http.get<CustomerSalesCount>(`${this.baseUrl}/${id}/sales-count`);
   }
 
   activeOptions(): Observable<Customer[]> {

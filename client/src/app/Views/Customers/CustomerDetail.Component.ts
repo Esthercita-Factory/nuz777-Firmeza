@@ -1,17 +1,22 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { toApiError } from '../../Services/Api.Service';
 import { ConfirmService } from '../../Services/confirm.service';
 import { Customer, CustomersService } from '../../Services/customers.service';
 import { ToastService } from '../../Services/imports.service';
 import { IconComponent } from '../Shared/Icon.Component';
+import { SkylineBackgroundComponent } from '../Shared/SkylineBackground.Component';
 
 @Component({
   selector: 'app-customer-detail',
-  imports: [RouterLink, DatePipe, IconComponent],
+  imports: [RouterLink, DatePipe, IconComponent, SkylineBackgroundComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mx-auto max-w-4xl">
+    <div class="relative min-h-[calc(100vh-14rem)] pb-12">
+      <app-skyline-background />
+      <div class="relative z-10 mx-auto max-w-4xl">
       @if (errorMessage(); as message) {
         <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-800">{{ message }}</div>
       }
@@ -95,6 +100,7 @@ import { IconComponent } from '../Shared/Icon.Component';
           </dl>
         </div>
       }
+      </div>
     </div>
   `
 })
@@ -128,9 +134,34 @@ export class CustomerDetailComponent implements OnInit {
   }
 
   protected async remove(customer: Customer): Promise<void> {
+    try {
+      const salesInfo = await firstValueFrom(this.customersService.getSalesCount(customer.id));
+      if (salesInfo.hasSales) {
+        const confirmed = await this.confirmService.confirm({
+          title: 'Advertencia: Cliente con ventas asociadas',
+          message: `El cliente "${customer.fullName}" tiene ${salesInfo.salesCount} venta(s) asociada(s). Si continúas, se eliminará el cliente junto con sus ventas asociadas. ¿Deseas eliminarlo de todos modos?`,
+          confirmLabel: 'Sí, eliminar de todos modos',
+          cancelLabel: 'Cancelar',
+          tone: 'warning'
+        });
+        if (!confirmed) return;
+
+        this.customersService.delete(customer.id, true).subscribe({
+          next: () => {
+            this.toastService.success('Cliente y ventas asociadas eliminados.');
+            this.router.navigate(['/clientes']);
+          },
+          error: (error) => this.toastService.error(toApiError(error).message)
+        });
+        return;
+      }
+    } catch {
+      // Continuar con confirmación estándar si falla consulta de ventas
+    }
+
     const confirmed = await this.confirmService.confirm({
       title: 'Eliminar cliente',
-      message: `¿Eliminar a ${customer.fullName}? Esta accion no se puede deshacer.`
+      message: `¿Eliminar a ${customer.fullName}? Esta acción no se puede deshacer.`
     });
     if (!confirmed) return;
 
@@ -139,7 +170,30 @@ export class CustomerDetailComponent implements OnInit {
         this.toastService.success('Cliente eliminado.');
         this.router.navigate(['/clientes']);
       },
-      error: (error) => this.toastService.error(toApiError(error).message)
+      error: async (error) => {
+        const apiError = toApiError(error);
+        if (error.status === 409) {
+          const forceConfirm = await this.confirmService.confirm({
+            title: 'Advertencia: Cliente con ventas asociadas',
+            message: `El cliente "${customer.fullName}" tiene ventas asociadas. ¿Deseas eliminarlo de todos modos junto con sus ventas?`,
+            confirmLabel: 'Sí, eliminar de todos modos',
+            cancelLabel: 'Cancelar',
+            tone: 'warning'
+          });
+          if (forceConfirm) {
+            this.customersService.delete(customer.id, true).subscribe({
+              next: () => {
+                this.toastService.success('Cliente y ventas asociadas eliminados.');
+                this.router.navigate(['/clientes']);
+              },
+              error: (err) => this.toastService.error(toApiError(err).message)
+            });
+            return;
+          }
+        } else {
+          this.toastService.error(apiError.message);
+        }
+      }
     });
   }
 }

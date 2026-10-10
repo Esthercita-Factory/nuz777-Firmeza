@@ -5,10 +5,11 @@ import Swal from 'sweetalert2';
 import { toApiError } from '../../Services/Api.Service';
 import { ADMINISTRATOR_ROLE, AuthService } from '../../Services/auth.service';
 import { AdminNotificationService } from '../../Services/admin-notification.service';
+import { ThemeToggleComponent } from '../Shared/ThemeToggle.Component';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, ThemeToggleComponent],
   template: `
     <div class="relative flex min-h-screen flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/50 px-4 py-8 text-slate-800 sm:px-6 lg:px-8">
       <!-- Malla de fondo sutil y orbes de iluminación suave -->
@@ -75,7 +76,8 @@ import { AdminNotificationService } from '../../Services/admin-notification.serv
           Volver al portal
         </a>
 
-        <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
+          <app-theme-toggle size="sm" />
           <span>¿No tienes cuenta?</span>
           <a routerLink="/register" class="font-bold text-blue-600 hover:text-blue-500 hover:underline">
             Solicitar registro →

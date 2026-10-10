@@ -611,12 +611,12 @@ public sealed class BulkImportService : IBulkImportService
             cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
         }
 
-        var sampleData = new object[][]
+        var sampleData = new object?[][]
         {
-            new object[] { "CEM-001", "Cemento Gris Tipo UG 50kg", "Cementos", "Bulto", 32500m, 150m, "Cemento uso general", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 10m, "FAC-2026-001", "2026-10-02" },
-            new object[] { "VAR-002", "Varilla Corrugada 1/2 pulgada", "Acero", "Varilla", 28000m, 300m, "Acero de refuerzo", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 20m, "FAC-2026-001", "2026-10-02" },
-            new object[] { "ARE-003", "Arena Lavada de Rio m3", "Agregados", "Metro cubico", 65000m, 40m, "Arena de rio lavada", "9876543210", "Arq. Maria Paula Rincon", "3159876543", "maria.rincon@estudio.co", "Calle 127 #14-30", 29m, 3m, "FAC-2026-002", "2026-10-02" },
-            new object[] { "LAD-004", "Ladrillo Estructurado 6 Huecos", "Mamposteria", "Unidad", 1450m, 5000m, "Ladrillo para mamposteria", "7984561230", "Ferreteria El Triunfo", "3001234567", "eltriunfo@ferre.com", "Carrera 15 #45-10", 48m, null, "", "" }
+            new object?[] { "CEM-001", "Cemento Gris Tipo UG 50kg", "Cementos", "Bulto", 32500m, 150m, "Cemento uso general", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 10m, "FAC-2026-001", "2026-10-02" },
+            new object?[] { "VAR-002", "Varilla Corrugada 1/2 pulgada", "Acero", "Varilla", 28000m, 300m, "Acero de refuerzo", "1020304050", "Construcciones Andina SAS", "3104567890", "compras@andina.co", "Av. El Dorado #68-20", 35m, 20m, "FAC-2026-001", "2026-10-02" },
+            new object?[] { "ARE-003", "Arena Lavada de Rio m3", "Agregados", "Metro cubico", 65000m, 40m, "Arena de rio lavada", "9876543210", "Arq. Maria Paula Rincon", "3159876543", "maria.rincon@estudio.co", "Calle 127 #14-30", 29m, 3m, "FAC-2026-002", "2026-10-02" },
+            new object?[] { "LAD-004", "Ladrillo Estructurado 6 Huecos", "Mamposteria", "Unidad", 1450m, 5000m, "Ladrillo para mamposteria", "7984561230", "Ferreteria El Triunfo", "3001234567", "eltriunfo@ferre.com", "Carrera 15 #45-10", 48m, null, "", "" }
         };
 
         for (var r = 0; r < sampleData.Length; r++)

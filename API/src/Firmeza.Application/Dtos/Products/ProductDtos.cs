@@ -58,6 +58,8 @@ public sealed record ProductQuery
 {
     public string? Q { get; init; }
 
+    public string? Category { get; init; }
+
     public bool OnlyActive { get; init; }
 
     public int Page { get; init; } = 1;

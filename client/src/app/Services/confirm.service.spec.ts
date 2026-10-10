@@ -91,6 +91,9 @@ describe('ConfirmService', () => {
     service.confirm({ title: 't', message: 'm', confirmLabel: 'Restaurar', cancelLabel: 'Dejar igual', tone: 'default' });
     expect(service.request()?.confirmLabel).toBe('Restaurar');
     expect(service.request()?.tone).toBe('default');
+
+    service.confirm({ title: 't2', message: 'm2', tone: 'warning' });
+    expect(service.request()?.tone).toBe('warning');
   });
 
   it('si se pide otra confirmacion sin responder, la anterior se cancela', async () => {

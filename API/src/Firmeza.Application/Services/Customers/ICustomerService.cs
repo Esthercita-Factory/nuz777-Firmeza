@@ -15,5 +15,7 @@ public interface ICustomerService
 
     Task<Result<CustomerResponse>> UpdateAsync(Guid id, CustomerRequest request, CancellationToken cancellationToken = default);
 
-    Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Result<CustomerSalesCountResponse>> GetSalesCountAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<Result> DeleteAsync(Guid id, bool force = false, CancellationToken cancellationToken = default);
 }

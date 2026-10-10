@@ -30,6 +30,7 @@ export interface ProductRequest {
 
 export interface ProductQuery {
   q?: string;
+  category?: string;
   onlyActive?: boolean;
   page?: number;
   pageSize?: number;
@@ -81,6 +82,7 @@ export class ProductsService {
   private toParams(query: ProductQuery): HttpParams {
     let params = new HttpParams();
     if (query.q) params = params.set('q', query.q);
+    if (query.category) params = params.set('category', query.category);
     if (query.onlyActive) params = params.set('onlyActive', 'true');
     if (query.page) params = params.set('page', query.page);
     if (query.pageSize) params = params.set('pageSize', query.pageSize);

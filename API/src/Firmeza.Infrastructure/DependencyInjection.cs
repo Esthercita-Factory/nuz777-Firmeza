@@ -47,6 +47,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IDashboardQuery, DashboardQuery>();
 
+        services.Configure<Mail.MailOptions>(configuration.GetSection(Mail.MailOptions.SectionName));
+        services.AddScoped<Mail.ISmtpTransport, Mail.SystemSmtpTransport>();
+        services.AddScoped<IMailService, Mail.SmtpMailService>();
+
         return services;
     }
 
