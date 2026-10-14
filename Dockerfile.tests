@@ -14,9 +14,9 @@ COPY API/src/Firmeza.Domain/Firmeza.Domain.csproj API/src/Firmeza.Domain/
 COPY API/src/Firmeza.Application/Firmeza.Application.csproj API/src/Firmeza.Application/
 COPY API/src/Firmeza.Infrastructure/Firmeza.Infrastructure.csproj API/src/Firmeza.Infrastructure/
 COPY API/src/Firmeza.Api/Firmeza.Api.csproj API/src/Firmeza.Api/
-COPY API/src/Firmeza.Web/Firmeza.Web.csproj API/src/Firmeza.Web/
 COPY API/src/Firmeza.Tests/Firmeza.Tests.csproj API/src/Firmeza.Tests/
-RUN dotnet restore API/src/Firmeza.Tests/Firmeza.Tests.csproj
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet restore API/src/Firmeza.Tests/Firmeza.Tests.csproj
 
 COPY API/src/Firmeza.Domain/ API/src/Firmeza.Domain/
 COPY API/src/Firmeza.Application/ API/src/Firmeza.Application/
@@ -24,7 +24,8 @@ COPY API/src/Firmeza.Infrastructure/ API/src/Firmeza.Infrastructure/
 COPY API/src/Firmeza.Api/ API/src/Firmeza.Api/
 COPY API/src/Firmeza.Tests/ API/src/Firmeza.Tests/
 
-RUN dotnet build API/src/Firmeza.Tests/Firmeza.Tests.csproj -c Release --no-restore
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+    dotnet build API/src/Firmeza.Tests/Firmeza.Tests.csproj -c Release --no-restore
 
 # dotnet test devuelve != 0 si alguna prueba falla, que es lo que hace que
 # docker compose no levante el resto de los servicios.
