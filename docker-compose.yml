@@ -25,7 +25,7 @@ services:
     image: ${FIRMEZA_API_IMAGE:-ghcr.io/esthercita-factory/nuz777-firmeza-api:latest}
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     depends_on:
       tests:
         condition: service_completed_successfully

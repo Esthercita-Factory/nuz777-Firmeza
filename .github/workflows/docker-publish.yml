@@ -52,7 +52,7 @@ jobs:
       matrix:
         include:
           - name: api
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile.api
     steps:
       - name: Checkout
         uses: actions/checkout@v4
