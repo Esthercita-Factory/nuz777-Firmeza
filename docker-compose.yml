@@ -1,10 +1,4 @@
 services:
-  tests:
-    build:
-      context: .
-      dockerfile: Dockerfile.tests
-    image: ${FIRMEZA_TESTS_IMAGE:-firmeza-tests:local}
-
   db:
     image: postgres:16-alpine
     environment:
@@ -27,10 +21,10 @@ services:
       context: .
       dockerfile: Dockerfile.api
     depends_on:
-      tests:
-        condition: service_completed_successfully
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=firmeza;Username=postgres;Password=postgres
