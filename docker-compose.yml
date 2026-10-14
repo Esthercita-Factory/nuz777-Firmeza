@@ -39,7 +39,7 @@ services:
       Swagger__Enabled: "true"
       Cors__AllowedOrigins__0: ${CORS_CLIENT_ORIGIN:-http://localhost:8081}
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8888}:8080"
 
 volumes:
   firmeza-postgres:
