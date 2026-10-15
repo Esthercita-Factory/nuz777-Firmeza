@@ -17,5 +17,7 @@ public interface ICustomerRequestRepository
 
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
 
+    Task<CustomerSignupRequest?> FindLatestByEmailAsync(string email, CancellationToken cancellationToken = default);
+
     Task AddAsync(CustomerSignupRequest request, CancellationToken cancellationToken = default);
 }

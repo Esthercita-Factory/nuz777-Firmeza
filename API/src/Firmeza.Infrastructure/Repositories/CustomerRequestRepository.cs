@@ -56,6 +56,13 @@ public sealed class CustomerRequestRepository : ICustomerRequestRepository
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
         => _db.CustomerRequests.AnyAsync(request => request.Email == email, cancellationToken);
 
+    public Task<CustomerSignupRequest?> FindLatestByEmailAsync(string email, CancellationToken cancellationToken = default)
+        => _db.CustomerRequests
+            .AsNoTracking()
+            .Where(request => request.Email == email)
+            .OrderByDescending(request => request.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task AddAsync(CustomerSignupRequest request, CancellationToken cancellationToken = default)
         => await _db.CustomerRequests.AddAsync(request, cancellationToken);
 }

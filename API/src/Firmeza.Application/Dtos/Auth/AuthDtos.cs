@@ -71,4 +71,9 @@ public sealed record TokenResponse(
     DateTimeOffset RefreshTokenExpiresAt,
     UserResponse User);
 
-public sealed record UserResponse(string Id, string Email, string FullName, IReadOnlyList<string> Roles);
+public sealed record UserResponse(
+    string Id,
+    string Email,
+    string FullName,
+    IReadOnlyList<string> Roles,
+    string? CustomerStatus = null);

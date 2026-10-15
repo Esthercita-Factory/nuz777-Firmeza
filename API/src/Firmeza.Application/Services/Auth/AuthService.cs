@@ -128,7 +128,8 @@ public sealed class AuthService : IAuthService
             created.Value.Id,
             created.Value.Email,
             created.Value.FullName,
-            [ApplicationRoles.Customer]));
+            [ApplicationRoles.Customer],
+            CustomerRequestStatus.Pending.ToString()));
     }
 
     public async Task<Result<TokenResponse>> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
@@ -191,8 +192,9 @@ public sealed class AuthService : IAuthService
         }
 
         var roles = await _users.GetRolesAsync(user.Id, cancellationToken);
+        var customerStatus = await ResolveCustomerStatusAsync(user.Email, roles, cancellationToken);
 
-        return Result.Success(new UserResponse(user.Id, user.Email, user.FullName, roles));
+        return Result.Success(new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus));
     }
 
     private async Task<Result<TokenResponse>> IssueTokensAsync(
@@ -216,13 +218,40 @@ public sealed class AuthService : IAuthService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var customerStatus = await ResolveCustomerStatusAsync(user.Email, roles, cancellationToken);
+
         return Result.Success(new TokenResponse(
             "Bearer",
             pair.AccessToken,
             pair.AccessTokenExpiresAt,
             pair.RefreshToken,
             pair.RefreshTokenExpiresAt,
-            new UserResponse(user.Id, user.Email, user.FullName, roles)));
+            new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus)));
+    }
+
+    private async Task<string?> ResolveCustomerStatusAsync(
+        string email,
+        IReadOnlyList<string> roles,
+        CancellationToken cancellationToken)
+    {
+        if (roles.Contains(ApplicationRoles.Administrator))
+        {
+            return "Approved";
+        }
+
+        if (roles.Contains(ApplicationRoles.Customer))
+        {
+            var customer = await _customers.FindByEmailAsync(email, cancellationToken);
+            if (customer is not null)
+            {
+                return "Approved";
+            }
+
+            var request = await _requests.FindLatestByEmailAsync(email, cancellationToken);
+            return request?.Status.ToString() ?? "Pending";
+        }
+
+        return null;
     }
 
     private static Dictionary<string, string[]> MapIdentityErrors(IReadOnlyList<string> errors)
