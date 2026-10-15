@@ -68,23 +68,38 @@ builder.Services.AddAuthorization();
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
 {
-    if (allowedOrigins.Length > 0)
+    policy.SetIsOriginAllowed(origin =>
     {
-        // Content-Disposition no es un header CORS seguro: sin exponerse, el cliente
-        // no puede leer el nombre real del archivo exportado (xlsx/pdf).
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithExposedHeaders("Content-Disposition")
-            .AllowCredentials();
-    }
-    else
-    {
-        policy.AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithExposedHeaders("Content-Disposition");
-    }
+        if (string.IsNullOrWhiteSpace(origin)) return false;
+        try
+        {
+            var uri = new Uri(origin);
+            // 1. En local: permitir cualquier puerto en localhost o 127.0.0.1 tanto http como https
+            if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 2. En la nube: permitir el dominio oficial firmeza.clandev.com y cualquier subdominio .clandev.com
+            if (uri.Host.Equals("firmeza.clandev.com", StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.EndsWith(".clandev.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 3. Orígenes adicionales configurados en appsettings o variables de entorno
+            return allowedOrigins.Any(ao => ao.TrimEnd('/').Equals(origin.TrimEnd('/'), StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    })
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+    .WithExposedHeaders("Content-Disposition")
+    .AllowCredentials();
 }));
 
 builder.Services.AddEndpointsApiExplorer();
