@@ -37,7 +37,10 @@ services:
       Jwt__RefreshTokenDays: 7
       Database__MigrateOnStartup: "true"
       Swagger__Enabled: "true"
-      Cors__AllowedOrigins__0: ${CORS_CLIENT_ORIGIN:-http://localhost:8889}
+      Cors__AllowedOrigins__0: ${CORS_CLIENT_ORIGIN:-http://firmeza.clandev.com}
+      Cors__AllowedOrigins__1: http://localhost:8889
+      Cors__AllowedOrigins__2: https://firmeza.clandev.com
+      Cors__AllowedOrigins__3: http://localhost:4200
     ports:
       - "${API_PORT:-8888}:8080"
 
