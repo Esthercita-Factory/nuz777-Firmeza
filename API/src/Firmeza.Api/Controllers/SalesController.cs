@@ -168,13 +168,14 @@ public sealed class SalesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result);
     }
 
-    /// <summary>Descarga el comprobante/recibo oficial en formato PDF.</summary>
+    /// <summary>Descarga o visualiza el comprobante/recibo oficial en formato PDF.</summary>
     [HttpGet("{id:guid}/receipt")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DownloadReceipt(
         Guid id,
+        [FromQuery] bool inline,
         [FromServices] ISaleRepository saleRepository,
         [FromServices] Firmeza.Application.Services.Receipts.IReceiptService receiptService,
         CancellationToken cancellationToken)
@@ -191,6 +192,11 @@ public sealed class SalesController : ControllerBase
         }
 
         var pdfBytes = receiptService.GenerateReceiptPdf(sale);
+        if (inline)
+        {
+            Response.Headers.ContentDisposition = $"inline; filename=\"recibo_{sale.SaleNumber}.pdf\"";
+            return File(pdfBytes, "application/pdf");
+        }
         return File(pdfBytes, "application/pdf", $"recibo_{sale.SaleNumber}.pdf");
     }
 
