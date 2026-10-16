@@ -74,17 +74,18 @@ public sealed class ProductRepository : IProductRepository
     {
         if (!string.IsNullOrWhiteSpace(filter.Term))
         {
-            var term = filter.Term;
+            var term = $"%{filter.Term.Trim()}%";
             query = query.Where(product =>
-                product.Name.Contains(term)
-                || product.Sku.Contains(term)
-                || product.Category.Contains(term));
+                EF.Functions.ILike(product.Name, term)
+                || EF.Functions.ILike(product.Sku, term)
+                || EF.Functions.ILike(product.Category, term)
+                || (product.Description != null && EF.Functions.ILike(product.Description, term)));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Category))
         {
-            var category = filter.Category;
-            query = query.Where(product => product.Category == category);
+            var category = filter.Category.Trim();
+            query = query.Where(product => EF.Functions.ILike(product.Category, category));
         }
 
         return filter.OnlyActive ? query.Where(product => product.IsActive) : query;

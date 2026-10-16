@@ -70,11 +70,11 @@ public sealed class CustomerRepository : ICustomerRepository
     {
         if (!string.IsNullOrWhiteSpace(filter.Term))
         {
-            var term = filter.Term;
+            var term = $"%{filter.Term.Trim()}%";
             query = query.Where(customer =>
-                customer.FullName.Contains(term)
-                || customer.Document.Contains(term)
-                || customer.Email.Contains(term));
+                EF.Functions.ILike(customer.FullName, term)
+                || EF.Functions.ILike(customer.Document, term)
+                || EF.Functions.ILike(customer.Email, term));
         }
 
         return filter.OnlyActive ? query.Where(customer => customer.IsActive) : query;

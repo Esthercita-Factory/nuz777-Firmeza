@@ -25,8 +25,10 @@ public sealed class SaleRepository : ISaleRepository
 
         if (!string.IsNullOrWhiteSpace(filter.Term))
         {
-            var term = filter.Term;
-            query = query.Where(sale => sale.SaleNumber.Contains(term) || sale.Customer.FullName.Contains(term));
+            var term = $"%{filter.Term.Trim()}%";
+            query = query.Where(sale =>
+                EF.Functions.ILike(sale.SaleNumber, term) ||
+                EF.Functions.ILike(sale.Customer.FullName, term));
         }
 
         if (filter.Status is not null)

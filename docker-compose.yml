@@ -43,6 +43,8 @@ services:
       Cors__AllowedOrigins__3: http://localhost:4200
       Cors__AllowedOrigins__4: http://services.firmeza.clandev.com
       Cors__AllowedOrigins__5: https://services.firmeza.clandev.com
+      Authentication__GitHub__ClientId: ${Authentication__GitHub__ClientId:-}
+      Authentication__GitHub__ClientSecret: ${Authentication__GitHub__ClientSecret:-}
     ports:
       - "${API_PORT:-8888}:8080"
 

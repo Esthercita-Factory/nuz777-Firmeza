@@ -25,11 +25,11 @@ public sealed class CustomerRequestRepository : ICustomerRequestRepository
 
         if (!string.IsNullOrWhiteSpace(filter.Term))
         {
-            var term = filter.Term;
+            var term = $"%{filter.Term.Trim()}%";
             query = query.Where(request =>
-                request.FullName.Contains(term) ||
-                request.Document.Contains(term) ||
-                request.Email.Contains(term));
+                EF.Functions.ILike(request.FullName, term) ||
+                EF.Functions.ILike(request.Document, term) ||
+                EF.Functions.ILike(request.Email, term));
         }
 
         if (filter.Status is not null)
