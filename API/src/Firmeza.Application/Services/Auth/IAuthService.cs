@@ -13,4 +13,15 @@ public interface IAuthService
     Task<Result<TokenResponse>> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
 
     Task<Result<UserResponse>> GetProfileAsync(CancellationToken cancellationToken = default);
+
+    Task<Result<TokenResponse>> ExternalLoginAsync(
+        ExternalUserRegistration registration,
+        bool allowCreate = true,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<UserResponse>> CompleteProfileAsync(
+        CompleteProfileRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result> DeleteAccountAsync(CancellationToken cancellationToken = default);
 }

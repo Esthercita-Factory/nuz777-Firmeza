@@ -31,6 +31,7 @@ public static class InfrastructureServiceCollectionExtensions
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
             })
             .AddRoles<IdentityRole>()
+            .AddSignInManager()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddSingleton(BuildJwtTokenOptions(configuration));

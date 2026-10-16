@@ -69,15 +69,31 @@ public sealed class AuthService : IAuthService
                 Error.Validation(new Dictionary<string, string[]> { [nameof(request.ConfirmPassword)] = ["Las contrasenas no coinciden."] }));
         }
 
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+        var emailTomado = await _users.FindByEmailAsync(normalizedEmail, cancellationToken) is not null
+            || await _customers.FindByEmailAsync(normalizedEmail, cancellationToken) is not null
+            || await _requests.FindLatestByEmailAsync(normalizedEmail, cancellationToken) is not null;
+
+        if (emailTomado)
+        {
+            return Result.Failure<UserResponse>(Error.Validation(new Dictionary<string, string[]>
+            {
+                [nameof(request.Email)] = ["Ya existe una cuenta registrada con este correo electrónico."]
+            }, "Ya existe una cuenta registrada con este correo electrónico. Por favor inicia sesión o utiliza otro correo diferente."));
+        }
+
         var registration = new UserRegistration(
-            request.Email.Trim().ToLowerInvariant(),
+            normalizedEmail,
             request.FullName.Trim(),
             request.Password);
 
         var created = await _users.RegisterAsync(registration, ApplicationRoles.Customer, cancellationToken);
         if (!created.Succeeded || created.Value is null)
         {
-            return Result.Failure<UserResponse>(Error.Validation(MapIdentityErrors(created.Errors)));
+            return Result.Failure<UserResponse>(Error.Validation(
+                MapIdentityErrors(created.Errors),
+                "No fue posible completar el registro. Revisa los datos ingresados."));
         }
 
         var document = request.Document.Trim();
@@ -197,6 +213,157 @@ public sealed class AuthService : IAuthService
         return Result.Success(new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus));
     }
 
+    public async Task<Result<TokenResponse>> ExternalLoginAsync(
+        ExternalUserRegistration registration,
+        bool allowCreate = true,
+        CancellationToken cancellationToken = default)
+    {
+        var userResult = await _users.FindOrCreateExternalUserAsync(
+            registration,
+            ApplicationRoles.Customer,
+            allowCreate,
+            cancellationToken);
+
+        if (!userResult.Succeeded)
+        {
+            var firstError = userResult.Errors.FirstOrDefault() ?? "No fue posible autenticar la cuenta externa.";
+            return Result.Failure<TokenResponse>(Error.Unauthorized(firstError));
+        }
+
+        var (user, _) = userResult.Value;
+        var roles = await _users.GetRolesAsync(user.Id, cancellationToken);
+
+        return await IssueTokensAsync(user, roles, cancellationToken);
+    }
+
+    public async Task<Result<UserResponse>> CompleteProfileAsync(
+        CompleteProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.UserId;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result.Failure<UserResponse>(Error.Unauthorized("No hay una sesión activa."));
+        }
+
+        var user = await _users.FindByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result.Failure<UserResponse>(Error.EntityNotFound("Usuario", userId));
+        }
+
+        var document = request.Document.Trim();
+        if (string.IsNullOrWhiteSpace(document))
+        {
+            return Result.Failure<UserResponse>(Error.Validation(new Dictionary<string, string[]>
+            {
+                [nameof(request.Document)] = ["El número de documento es obligatorio."]
+            }, "El número de documento es obligatorio."));
+        }
+
+        var documentoTomado = await _customers.DocumentExistsAsync(document, null, cancellationToken)
+            || await _requests.DocumentExistsAsync(document, cancellationToken);
+
+        if (documentoTomado)
+        {
+            return Result.Failure<UserResponse>(Error.Validation(new Dictionary<string, string[]>
+            {
+                [nameof(request.Document)] = ["Ese documento ya está registrado."]
+            }, "El número de documento ingresado ya se encuentra registrado."));
+        }
+
+        var fullName = string.IsNullOrWhiteSpace(request.FullName) ? user.FullName : request.FullName.Trim();
+
+        var existingRequest = await _requests.FindLatestByEmailAsync(user.Email, cancellationToken);
+        if (existingRequest is not null)
+        {
+            existingRequest.Document = document;
+            existingRequest.FullName = fullName;
+            existingRequest.Age = request.Age;
+            existingRequest.Phone = request.Phone.Trim();
+            existingRequest.Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim();
+            existingRequest.Status = CustomerRequestStatus.Pending;
+        }
+        else
+        {
+            await _requests.AddAsync(new CustomerSignupRequest
+            {
+                UserId = user.Id,
+                Document = document,
+                FullName = fullName,
+                Age = request.Age,
+                Email = user.Email,
+                Phone = request.Phone.Trim(),
+                Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim(),
+                Status = CustomerRequestStatus.Pending,
+                CreatedAt = _clock.UtcNow
+            }, cancellationToken);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (_mailService is not null)
+        {
+            try
+            {
+                await _mailService.SendWelcomeEmailAsync(user.Email, fullName, cancellationToken);
+            }
+            catch
+            {
+                // Fallo de correo no debe tumbar el registro
+            }
+        }
+
+        var roles = await _users.GetRolesAsync(user.Id, cancellationToken);
+        return Result.Success(new UserResponse(
+            user.Id,
+            user.Email,
+            fullName,
+            roles,
+            CustomerRequestStatus.Pending.ToString()));
+    }
+
+    public async Task<Result> DeleteAccountAsync(CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.UserId;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result.Failure(Error.Unauthorized("No hay una sesion activa."));
+        }
+
+        var user = await _users.FindByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result.Failure(Error.EntityNotFound("Usuario", userId));
+        }
+
+        var roles = await _users.GetRolesAsync(user.Id, cancellationToken);
+        if (roles.Contains(ApplicationRoles.Administrator))
+        {
+            return Result.Failure(Error.Forbidden("No se puede eliminar la cuenta principal de administrador."));
+        }
+
+        await _refreshTokens.RevokeAllForUserAsync(user.Id, _clock.UtcNow, cancellationToken);
+
+        var customer = await _customers.FindByEmailAsync(user.Email, cancellationToken);
+        if (customer is not null)
+        {
+            await _customers.RemoveSalesByCustomerIdAsync(customer.Id, cancellationToken);
+            _customers.Remove(customer);
+        }
+
+        var signupRequest = await _requests.FindLatestByEmailAsync(user.Email, cancellationToken);
+        if (signupRequest is not null)
+        {
+            _requests.Remove(signupRequest);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _users.DeleteAsync(user.Id, cancellationToken);
+
+        return Result.Success();
+    }
+
     private async Task<Result<TokenResponse>> IssueTokensAsync(
         UserAccount user,
         IReadOnlyList<string> roles,
@@ -248,7 +415,7 @@ public sealed class AuthService : IAuthService
             }
 
             var request = await _requests.FindLatestByEmailAsync(email, cancellationToken);
-            return request?.Status.ToString() ?? "Pending";
+            return request?.Status.ToString() ?? "RequiresProfile";
         }
 
         return null;
@@ -260,9 +427,22 @@ public sealed class AuthService : IAuthService
 
         foreach (var error in errors)
         {
-            failures[string.Empty] = failures.TryGetValue(string.Empty, out var existing)
-                ? [.. existing, error]
-                : [error];
+            var key = string.Empty;
+            var message = error;
+
+            if (error.Contains("already taken", StringComparison.OrdinalIgnoreCase) ||
+                error.Contains("ya está en uso", StringComparison.OrdinalIgnoreCase) ||
+                error.Contains("duplicate", StringComparison.OrdinalIgnoreCase) ||
+                error.Contains("email", StringComparison.OrdinalIgnoreCase) ||
+                error.Contains("user name", StringComparison.OrdinalIgnoreCase))
+            {
+                key = "Email";
+                message = "Ya existe una cuenta registrada con este correo electrónico.";
+            }
+
+            failures[key] = failures.TryGetValue(key, out var existing)
+                ? [.. existing, message]
+                : [message];
         }
 
         return failures;

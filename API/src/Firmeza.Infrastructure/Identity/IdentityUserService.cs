@@ -55,6 +55,71 @@ public sealed class IdentityUserService : IUserService
         return OperationResult<UserAccount>.Success(ToAccount(user));
     }
 
+    public async Task<OperationResult<(UserAccount User, bool IsNewUser)>> FindOrCreateExternalUserAsync(
+        ExternalUserRegistration registration,
+        string defaultRole,
+        bool allowCreate = true,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByLoginAsync(registration.Provider, registration.ProviderKey);
+        if (user is not null)
+        {
+            return OperationResult<(UserAccount, bool)>.Success((ToAccount(user), false));
+        }
+
+        user = await _userManager.FindByEmailAsync(registration.Email);
+        var isNewUser = false;
+
+        if (user is null)
+        {
+            if (!allowCreate)
+            {
+                return OperationResult<(UserAccount, bool)>.Failure(
+                    ["La cuenta de este usuario fue eliminada o no se encuentra registrada en el sistema."]);
+            }
+
+            user = new ApplicationUser
+            {
+                UserName = registration.Email,
+                Email = registration.Email,
+                EmailConfirmed = true,
+                FullName = string.IsNullOrWhiteSpace(registration.FullName) ? registration.Email : registration.FullName
+            };
+
+            var createResult = await _userManager.CreateAsync(user);
+            if (!createResult.Succeeded)
+            {
+                return OperationResult<(UserAccount, bool)>.Failure(
+                    createResult.Errors.Select(error => error.Description).ToList());
+            }
+
+            var roleResult = await _userManager.AddToRoleAsync(user, defaultRole);
+            if (!roleResult.Succeeded)
+            {
+                await _userManager.DeleteAsync(user);
+                return OperationResult<(UserAccount, bool)>.Failure(
+                    roleResult.Errors.Select(error => error.Description).ToList());
+            }
+
+            isNewUser = true;
+        }
+
+        var loginInfo = new UserLoginInfo(registration.Provider, registration.ProviderKey, registration.Provider);
+        var addLoginResult = await _userManager.AddLoginAsync(user, loginInfo);
+        if (!addLoginResult.Succeeded)
+        {
+            if (isNewUser)
+            {
+                await _userManager.DeleteAsync(user);
+            }
+
+            return OperationResult<(UserAccount, bool)>.Failure(
+                addLoginResult.Errors.Select(error => error.Description).ToList());
+        }
+
+        return OperationResult<(UserAccount, bool)>.Success((ToAccount(user), isNewUser));
+    }
+
     public async Task DeleteAsync(string userId, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId);

@@ -20,4 +20,6 @@ public interface ICustomerRequestRepository
     Task<CustomerSignupRequest?> FindLatestByEmailAsync(string email, CancellationToken cancellationToken = default);
 
     Task AddAsync(CustomerSignupRequest request, CancellationToken cancellationToken = default);
+
+    void Remove(CustomerSignupRequest request);
 }

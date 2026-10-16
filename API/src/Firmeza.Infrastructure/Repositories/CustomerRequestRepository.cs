@@ -65,4 +65,7 @@ public sealed class CustomerRequestRepository : ICustomerRequestRepository
 
     public async Task AddAsync(CustomerSignupRequest request, CancellationToken cancellationToken = default)
         => await _db.CustomerRequests.AddAsync(request, cancellationToken);
+
+    public void Remove(CustomerSignupRequest request)
+        => _db.CustomerRequests.Remove(request);
 }

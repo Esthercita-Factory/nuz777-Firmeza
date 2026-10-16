@@ -63,6 +63,27 @@ public sealed class RefreshTokenRequest
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+public sealed class CompleteProfileRequest
+{
+    [Display(Name = "Documento")]
+    [Required(ErrorMessage = "El documento es obligatorio.")]
+    public string Document { get; set; } = string.Empty;
+
+    [Display(Name = "Nombre completo")]
+    public string? FullName { get; set; }
+
+    [Display(Name = "Edad")]
+    [Range(18, 120, ErrorMessage = "Debes tener al menos 18 años.")]
+    public int Age { get; set; } = 18;
+
+    [Display(Name = "Teléfono")]
+    [Required(ErrorMessage = "El teléfono o celular es obligatorio.")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Display(Name = "Dirección")]
+    public string? Address { get; set; }
+}
+
 public sealed record TokenResponse(
     string TokenType,
     string AccessToken,

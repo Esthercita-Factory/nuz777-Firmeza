@@ -4,6 +4,8 @@ public sealed record UserAccount(string Id, string Email, string FullName, bool 
 
 public sealed record UserRegistration(string Email, string FullName, string Password);
 
+public sealed record ExternalUserRegistration(string Provider, string ProviderKey, string Email, string FullName);
+
 public sealed record OperationResult<TValue>(bool Succeeded, IReadOnlyList<string> Errors, TValue? Value = default)
 {
     public static OperationResult<TValue> Success(TValue value) => new(true, [], value);
@@ -37,6 +39,12 @@ public interface IUserService
     Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default);
 
     Task<OperationResult<UserAccount>> RegisterAsync(UserRegistration registration, string role, CancellationToken cancellationToken = default);
+
+    Task<OperationResult<(UserAccount User, bool IsNewUser)>> FindOrCreateExternalUserAsync(
+        ExternalUserRegistration registration,
+        string defaultRole,
+        bool allowCreate = true,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Elimina la cuenta. Se usa para no dejar usuarios huerfanos cuando el registro falla.</summary>
     Task DeleteAsync(string userId, CancellationToken cancellationToken = default);
