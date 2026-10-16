@@ -151,9 +151,26 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
+app.Use((context, next) =>
+{
+    if (context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto) && !string.IsNullOrWhiteSpace(proto))
+    {
+        context.Request.Scheme = proto.ToString();
+    }
+    else if (!context.Request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) &&
+             !context.Request.Host.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Request.Scheme = "https";
+    }
+    return next();
 });
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
