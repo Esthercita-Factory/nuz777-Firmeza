@@ -103,7 +103,7 @@ public sealed class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ExternalLogin(
         [FromQuery] string provider,
-        [FromQuery] string returnUrl = "http://localhost:4201/auth/callback",
+        [FromQuery] string returnUrl = "https://firmeza.clandev.com/auth/callback",
         [FromQuery] string mode = "login")
     {
         var safeReturnUrl = NormalizeReturnUrl(returnUrl);
@@ -131,7 +131,7 @@ public sealed class AuthController : ControllerBase
     [HttpGet("external-callback")]
     [AllowAnonymous]
     public async Task<IActionResult> ExternalLoginCallback(
-        [FromQuery] string returnUrl = "http://localhost:4201/auth/callback",
+        [FromQuery] string returnUrl = "https://firmeza.clandev.com/auth/callback",
         [FromQuery] string mode = "login",
         [FromQuery] string? remoteError = null,
         CancellationToken cancellationToken = default)
@@ -195,7 +195,7 @@ public sealed class AuthController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(returnUrl))
         {
-            return "http://localhost:4201/auth/callback";
+            return "https://firmeza.clandev.com/auth/callback";
         }
 
         if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri))
@@ -209,6 +209,6 @@ public sealed class AuthController : ControllerBase
             }
         }
 
-        return "http://localhost:4201/auth/callback";
+        return "https://firmeza.clandev.com/auth/callback";
     }
 }

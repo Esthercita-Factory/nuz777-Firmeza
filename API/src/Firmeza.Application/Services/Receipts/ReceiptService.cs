@@ -117,7 +117,7 @@ public sealed class ReceiptService : IReceiptService
                     brand.Item().PaddingTop(6).Text("NIT: 901.458.789-1 · Régimen Común Responsable de IVA").FontSize(8).FontColor("#475569");
                     brand.Item().Text("Sede Principal: Zona Industrial Los Andes #45-12, Bogotá D.C.").FontSize(8).FontColor("#64748b");
                     brand.Item().Text("PBX: +57 (601) 745-9000 · Correo: ventas@firmeza.com").FontSize(8).FontColor("#64748b");
-                    brand.Item().Text("Portal web y pedidos: https://firmeza.local").FontSize(8).FontColor("#64748b");
+                    brand.Item().Text("Portal web y pedidos: https://firmeza.clandev.com").FontSize(8).FontColor("#64748b");
                 });
 
                 // Tarjeta de identificación del documento

@@ -53,4 +53,9 @@ public sealed class MailOptions
     /// Clave de API en caso de usar SendGrid en lugar de SMTP directo.
     /// </summary>
     public string? SendGridApiKey { get; set; }
+
+    /// <summary>
+    /// URL base pública del portal web frontend para los enlaces incluidos en correos.
+    /// </summary>
+    public string FrontendBaseUrl { get; set; } = "https://firmeza.clandev.com";
 }

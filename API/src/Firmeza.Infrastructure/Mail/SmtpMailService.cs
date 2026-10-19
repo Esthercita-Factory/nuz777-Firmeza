@@ -165,11 +165,20 @@ public sealed class SmtpMailService : IMailService
         }
     }
 
-    private static string BuildReceiptHtml(string name, Sale sale)
+    private string GetFrontendUrl(string relativePath)
+    {
+        var baseUrl = string.IsNullOrWhiteSpace(_options.FrontendBaseUrl)
+            ? "https://firmeza.clandev.com"
+            : _options.FrontendBaseUrl.TrimEnd('/');
+        return $"{baseUrl}/{relativePath.TrimStart('/')}";
+    }
+
+    private string BuildReceiptHtml(string name, Sale sale)
     {
         var culture = new CultureInfo("es-CO");
         var taxes = InventoryCalculator.SplitTaxInclusive(sale.Total);
         var encodedName = System.Web.HttpUtility.HtmlEncode(name);
+        var ordersUrl = GetFrontendUrl("/mis-compras");
 
         var (statusLabel, statusStyle) = sale.Status switch
         {
@@ -333,7 +342,7 @@ public sealed class SmtpMailService : IMailService
               <table role=""presentation"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""margin: 16px 0 24px;"">
                 <tr>
                   <td align=""center"">
-                    <a href=""http://localhost:5000/mis-compras"" target=""_blank"" style=""display: inline-block; padding: 13px 32px; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 800; text-decoration: none; border-radius: 10px; box-shadow: 0 6px 16px -2px rgba(37,99,235,0.35); text-transform: uppercase; letter-spacing: 0.5px;"">
+                    <a href=""{ordersUrl}"" target=""_blank"" style=""display: inline-block; padding: 13px 32px; background-color: #2563eb; color: #ffffff; font-size: 13px; font-weight: 800; text-decoration: none; border-radius: 10px; box-shadow: 0 6px 16px -2px rgba(37,99,235,0.35); text-transform: uppercase; letter-spacing: 0.5px;"">
                       Consultar Estado de mi Pedido →
                     </a>
                   </td>
@@ -362,9 +371,10 @@ public sealed class SmtpMailService : IMailService
 </html>";
     }
 
-    private static string BuildWelcomeHtml(string name, string? email = null)
+    private string BuildWelcomeHtml(string name, string? email = null)
     {
         var encodedName = System.Web.HttpUtility.HtmlEncode(name);
+        var shopUrl = GetFrontendUrl("/tienda");
 
         return $@"<!DOCTYPE html>
 <html lang=""es"">
@@ -511,7 +521,7 @@ public sealed class SmtpMailService : IMailService
               <table role=""presentation"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""margin: 16px 0 28px;"">
                 <tr>
                   <td align=""center"">
-                    <a href=""http://localhost:5000/tienda"" target=""_blank"" style=""display: inline-block; padding: 14px 36px; background-color: #2563eb; color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; border-radius: 12px; box-shadow: 0 8px 20px -4px rgba(37,99,235,0.4); text-transform: uppercase; letter-spacing: 0.5px;"">
+                    <a href=""{shopUrl}"" target=""_blank"" style=""display: inline-block; padding: 14px 36px; background-color: #2563eb; color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; border-radius: 12px; box-shadow: 0 8px 20px -4px rgba(37,99,235,0.4); text-transform: uppercase; letter-spacing: 0.5px;"">
                       Explorar Catálogo Público →
                     </a>
                   </td>
@@ -548,9 +558,10 @@ public sealed class SmtpMailService : IMailService
 </html>";
     }
 
-    private static string BuildAccountApprovedHtml(string name, string? email = null)
+    private string BuildAccountApprovedHtml(string name, string? email = null)
     {
         var encodedName = System.Web.HttpUtility.HtmlEncode(name);
+        var loginUrl = GetFrontendUrl("/login");
 
         return $@"<!DOCTYPE html>
 <html lang=""es"">
@@ -614,7 +625,7 @@ public sealed class SmtpMailService : IMailService
               <table role=""presentation"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""margin: 16px 0 24px;"">
                 <tr>
                   <td align=""center"">
-                    <a href=""http://localhost:5000/login"" target=""_blank"" style=""display: inline-block; padding: 13px 36px; background-color: #059669; color: #ffffff; font-size: 13.5px; font-weight: 800; text-decoration: none; border-radius: 10px; box-shadow: 0 6px 16px -2px rgba(5,150,105,0.35); text-transform: uppercase; letter-spacing: 0.5px;"">
+                    <a href=""{loginUrl}"" target=""_blank"" style=""display: inline-block; padding: 13px 36px; background-color: #059669; color: #ffffff; font-size: 13.5px; font-weight: 800; text-decoration: none; border-radius: 10px; box-shadow: 0 6px 16px -2px rgba(5,150,105,0.35); text-transform: uppercase; letter-spacing: 0.5px;"">
                       Iniciar Sesión y Comprar →
                     </a>
                   </td>

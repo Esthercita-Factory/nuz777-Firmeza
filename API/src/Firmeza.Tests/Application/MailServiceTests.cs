@@ -78,6 +78,8 @@ public class MailServiceTests
         Assert.Contains(sale.SaleNumber, subject);
         Assert.NotNull(body);
         Assert.Contains("Carlos Perez", body);
+        Assert.Contains("https://firmeza.clandev.com/mis-compras", body);
+        Assert.DoesNotContain("localhost:5000", body);
         Assert.Equal(1, attachmentCount);
         Assert.Equal($"comprobante_{sale.SaleNumber}.pdf", attachmentName);
         Assert.Equal("application/pdf", attachmentMediaType);
@@ -105,6 +107,8 @@ public class MailServiceTests
         Assert.Contains("Bienvenido", subject);
         Assert.NotNull(body);
         Assert.Contains("Maria Gomez", body);
+        Assert.Contains("https://firmeza.clandev.com/tienda", body);
+        Assert.DoesNotContain("localhost:5000", body);
     }
 
     [Fact]

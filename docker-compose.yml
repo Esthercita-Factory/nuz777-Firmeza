@@ -45,6 +45,7 @@ services:
       Cors__AllowedOrigins__5: https://services.firmeza.clandev.com
       Authentication__GitHub__ClientId: ${Authentication__GitHub__ClientId:-}
       Authentication__GitHub__ClientSecret: ${Authentication__GitHub__ClientSecret:-}
+      Mail__FrontendBaseUrl: ${FRONTEND_BASE_URL:-https://firmeza.clandev.com}
     ports:
       - "${API_PORT:-8888}:8080"
 
