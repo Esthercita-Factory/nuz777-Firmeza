@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Firmeza.Application.Abstractions;
 using Microsoft.AspNetCore.Identity;
 
@@ -19,14 +20,14 @@ public sealed class IdentityUserService : IUserService
     {
         var user = await _userManager.FindByEmailAsync(email);
 
-        return user is null ? null : ToAccount(user);
+        return user is null ? null : await ToAccountAsync(user);
     }
 
     public async Task<UserAccount?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(id);
 
-        return user is null ? null : ToAccount(user);
+        return user is null ? null : await ToAccountAsync(user);
     }
 
     public async Task<OperationResult<UserAccount>> RegisterAsync(UserRegistration registration, string role, CancellationToken cancellationToken = default)
@@ -52,7 +53,7 @@ public sealed class IdentityUserService : IUserService
             return OperationResult<UserAccount>.Failure(roleResult.Errors.Select(error => error.Description).ToList());
         }
 
-        return OperationResult<UserAccount>.Success(ToAccount(user));
+        return OperationResult<UserAccount>.Success(await ToAccountAsync(user));
     }
 
     public async Task<OperationResult<(UserAccount User, bool IsNewUser)>> FindOrCreateExternalUserAsync(
@@ -64,7 +65,8 @@ public sealed class IdentityUserService : IUserService
         var user = await _userManager.FindByLoginAsync(registration.Provider, registration.ProviderKey);
         if (user is not null)
         {
-            return OperationResult<(UserAccount, bool)>.Success((ToAccount(user), false));
+            await SyncAvatarClaimAsync(user, registration.AvatarUrl);
+            return OperationResult<(UserAccount, bool)>.Success((await ToAccountAsync(user), false));
         }
 
         user = await _userManager.FindByEmailAsync(registration.Email);
@@ -117,7 +119,9 @@ public sealed class IdentityUserService : IUserService
                 addLoginResult.Errors.Select(error => error.Description).ToList());
         }
 
-        return OperationResult<(UserAccount, bool)>.Success((ToAccount(user), isNewUser));
+        await SyncAvatarClaimAsync(user, registration.AvatarUrl);
+
+        return OperationResult<(UserAccount, bool)>.Success((await ToAccountAsync(user), isNewUser));
     }
 
     public async Task DeleteAsync(string userId, CancellationToken cancellationToken = default)
@@ -158,7 +162,7 @@ public sealed class IdentityUserService : IUserService
 
         await _userManager.ResetAccessFailedCountAsync(user);
 
-        return SignInAttempt.Success(ToAccount(user));
+        return SignInAttempt.Success(await ToAccountAsync(user));
     }
 
     public async Task<IReadOnlyList<string>> GetRolesAsync(string userId, CancellationToken cancellationToken = default)
@@ -174,9 +178,35 @@ public sealed class IdentityUserService : IUserService
         return [.. roles];
     }
 
-    private static UserAccount ToAccount(ApplicationUser user) => new(
-        user.Id,
-        user.Email ?? user.UserName ?? string.Empty,
-        user.FullName,
-        user.EmailConfirmed);
+    private async Task SyncAvatarClaimAsync(ApplicationUser user, string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            return;
+        }
+
+        var claims = await _userManager.GetClaimsAsync(user);
+        var existingAvatar = claims.FirstOrDefault(c => c.Type == "picture" || c.Type == "avatar_url");
+        if (existingAvatar is null)
+        {
+            await _userManager.AddClaimAsync(user, new Claim("picture", avatarUrl));
+        }
+        else if (existingAvatar.Value != avatarUrl)
+        {
+            await _userManager.ReplaceClaimAsync(user, existingAvatar, new Claim("picture", avatarUrl));
+        }
+    }
+
+    private async Task<UserAccount> ToAccountAsync(ApplicationUser user)
+    {
+        var claims = await _userManager.GetClaimsAsync(user);
+        var avatarUrl = claims.FirstOrDefault(c => c.Type == "picture" || c.Type == "avatar_url")?.Value;
+
+        return new(
+            user.Id,
+            user.Email ?? user.UserName ?? string.Empty,
+            user.FullName,
+            user.EmailConfirmed,
+            avatarUrl);
+    }
 }

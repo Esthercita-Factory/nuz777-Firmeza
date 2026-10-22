@@ -156,6 +156,9 @@ public sealed class AuthController : ControllerBase
         var name = info.Principal.FindFirstValue(ClaimTypes.Name)
             ?? info.Principal.FindFirstValue("urn:github:name")
             ?? info.Principal.Identity?.Name;
+        var avatarUrl = info.Principal.FindFirstValue("urn:github:avatar")
+            ?? info.Principal.FindFirstValue("avatar_url")
+            ?? info.Principal.FindFirstValue("picture");
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -167,7 +170,7 @@ public sealed class AuthController : ControllerBase
         var allowCreate = string.Equals(mode, "register", StringComparison.OrdinalIgnoreCase);
 
         var result = await _auth.ExternalLoginAsync(
-            new ExternalUserRegistration(provider, providerKey, email, fullName),
+            new ExternalUserRegistration(provider, providerKey, email, fullName, avatarUrl),
             allowCreate,
             cancellationToken);
 
@@ -185,7 +188,8 @@ public sealed class AuthController : ControllerBase
             ["accessToken"] = tokens.AccessToken,
             ["accessTokenExpiresAt"] = tokens.AccessTokenExpiresAt.ToString("O"),
             ["refreshToken"] = tokens.RefreshToken,
-            ["refreshTokenExpiresAt"] = tokens.RefreshTokenExpiresAt.ToString("O")
+            ["refreshTokenExpiresAt"] = tokens.RefreshTokenExpiresAt.ToString("O"),
+            ["avatarUrl"] = tokens.User.AvatarUrl ?? avatarUrl
         };
 
         return Redirect(QueryHelpers.AddQueryString(safeReturnUrl, redirectParams));

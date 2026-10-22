@@ -210,7 +210,7 @@ public sealed class AuthService : IAuthService
         var roles = await _users.GetRolesAsync(user.Id, cancellationToken);
         var customerStatus = await ResolveCustomerStatusAsync(user.Email, roles, cancellationToken);
 
-        return Result.Success(new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus));
+        return Result.Success(new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus, user.AvatarUrl));
     }
 
     public async Task<Result<TokenResponse>> ExternalLoginAsync(
@@ -393,7 +393,7 @@ public sealed class AuthService : IAuthService
             pair.AccessTokenExpiresAt,
             pair.RefreshToken,
             pair.RefreshTokenExpiresAt,
-            new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus)));
+            new UserResponse(user.Id, user.Email, user.FullName, roles, customerStatus, user.AvatarUrl)));
     }
 
     private async Task<string?> ResolveCustomerStatusAsync(

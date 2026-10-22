@@ -97,4 +97,5 @@ public sealed record UserResponse(
     string Email,
     string FullName,
     IReadOnlyList<string> Roles,
-    string? CustomerStatus = null);
+    string? CustomerStatus = null,
+    string? AvatarUrl = null);

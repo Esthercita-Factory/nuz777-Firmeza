@@ -8,6 +8,7 @@ using Firmeza.Infrastructure;
 using Firmeza.Infrastructure.Identity;
 using Firmeza.Infrastructure.Persistence;
 using Firmeza.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -69,6 +70,9 @@ if (!string.IsNullOrWhiteSpace(githubClientId) && !string.IsNullOrWhiteSpace(git
         options.ClientSecret = githubClientSecret;
         options.SignInScheme = IdentityConstants.ExternalScheme;
         options.Scope.Add("user:email");
+        options.ClaimActions.MapJsonKey("urn:github:avatar", "avatar_url");
+        options.ClaimActions.MapJsonKey("avatar_url", "avatar_url");
+        options.ClaimActions.MapJsonKey("picture", "avatar_url");
     });
 }
 

@@ -40,6 +40,10 @@ public sealed class JwtTokenService : ITokenService
             new(NameClaim, user.FullName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
+        if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+        {
+            claims.Add(new Claim("picture", user.AvatarUrl));
+        }
         claims.AddRange(roles.Select(role => new Claim(RoleClaim, role)));
 
         var jwt = new JwtSecurityToken(

@@ -1,10 +1,10 @@
 namespace Firmeza.Application.Abstractions;
 
-public sealed record UserAccount(string Id, string Email, string FullName, bool EmailConfirmed);
+public sealed record UserAccount(string Id, string Email, string FullName, bool EmailConfirmed, string? AvatarUrl = null);
 
 public sealed record UserRegistration(string Email, string FullName, string Password);
 
-public sealed record ExternalUserRegistration(string Provider, string ProviderKey, string Email, string FullName);
+public sealed record ExternalUserRegistration(string Provider, string ProviderKey, string Email, string FullName, string? AvatarUrl = null);
 
 public sealed record OperationResult<TValue>(bool Succeeded, IReadOnlyList<string> Errors, TValue? Value = default)
 {
